@@ -408,7 +408,7 @@ function Dashboard() {
           <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end lg:gap-16">
             <div className="min-w-0">
               <p className="text-lg text-[var(--color-text)]">Ventas netas</p>
-              <p className="misreg mt-2 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7.5rem)] leading-[0.9] tabular-nums text-[var(--color-text)]">
+              <p className="mt-2 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7.5rem)] leading-[0.9] tabular-nums text-[var(--color-text)]">
                 {summary ? formatPrice(summary.ventas_total) : <span className="inline-block h-24 w-72 max-w-full animate-pulse rounded bg-[var(--color-bg-alt)] align-bottom" />}
               </p>
               {summary && (

@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils';
  * variables so marks keep their roles (orange = what matters, lilac = context) on its colour.
  */
 export const GROUNDS = {
-  paper: '[--misreg-ink:rgba(45,27,105,0.5)] dark:[--misreg-ink:#5B47A8]',
+  paper: '',
   stage:
-    'on-dark grain bg-[var(--color-stage)] [--misreg-ink:#5B47A8] [--color-border:#2E2360] [--ins-hi:#F57C20] [--ins-ctx:#43358A] [--ins-2:#A495E6] [--ins-grid:#2E2360]',
+    'on-dark grain bg-[var(--color-stage)] [--color-border:#2E2360] [--ins-hi:#F57C20] [--ins-ctx:#43358A] [--ins-2:#A495E6] [--ins-grid:#2E2360]',
   field:
-    'grain bg-[#E6E1F4] dark:bg-[#1D1245] [--ins-hi:#C2570A] dark:[--ins-hi:#F57C20] [--misreg-ink:rgba(45,27,105,0.45)] dark:[--misreg-ink:#5B47A8] [--ins-ctx:#B3A8DA] dark:[--ins-ctx:#43358A] [--ins-grid:#CFC6EA] dark:[--ins-grid:#33286A] [--color-border:#CFC6EA] dark:[--color-border:#33286A]',
+    'grain bg-[#E6E1F4] dark:bg-[#1D1245] [--ins-hi:#C2570A] dark:[--ins-hi:#F57C20] [--ins-ctx:#B3A8DA] dark:[--ins-ctx:#43358A] [--ins-grid:#CFC6EA] dark:[--ins-grid:#33286A] [--color-border:#CFC6EA] dark:[--color-border:#33286A]',
 } as const;
 export type Ground = keyof typeof GROUNDS;
 
@@ -43,7 +43,7 @@ export type StoryLayout = 'split' | 'reverse' | 'wide' | 'pair';
 function Pull({ pull, stamp, align = 'left' }: { pull: PullFigure; stamp?: StoryStamp; align?: 'left' | 'right' }) {
   return (
     <div className={cn('min-w-0', align === 'right' && 'lg:text-right')}>
-      <p className="misreg font-[family-name:var(--font-display)] text-[clamp(5.5rem,12vw,12rem)] leading-[0.82] tracking-[-0.01em] text-[var(--ins-hi)] tabular-nums">
+      <p className="font-[family-name:var(--font-display)] text-[clamp(5.5rem,12vw,12rem)] leading-[0.82] tracking-[-0.01em] text-[var(--ins-hi)] tabular-nums">
         {pull.value}
       </p>
       <p className={cn('mt-5 max-w-[24ch] text-lg leading-snug text-[var(--color-text)]', align === 'right' && 'lg:ml-auto')}>{pull.caption}</p>

@@ -24,8 +24,7 @@ export default function NotFound() {
         <div className="relative justify-self-start pr-6 pb-4">
           <p
             aria-hidden="true"
-            className="type-hero misreg text-[clamp(7rem,18vw,12rem)] text-[var(--color-primary)]"
-            style={{ '--misreg-ink': 'var(--color-accent)' } as React.CSSProperties}
+            className="type-hero text-[clamp(7rem,18vw,12rem)] text-[var(--color-primary)]"
           >
             404
           </p>

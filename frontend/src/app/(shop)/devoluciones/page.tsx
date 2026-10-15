@@ -60,8 +60,7 @@ export default function DevolucionesPage() {
         <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 grid gap-8 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-16">
           <h2
             id="plazo"
-            className="type-hero misreg text-[var(--color-primary)]"
-            style={{ '--misreg-ink': 'var(--color-accent)' } as React.CSSProperties}
+            className="type-hero text-[var(--color-primary)]"
           >
             30 días
           </h2>

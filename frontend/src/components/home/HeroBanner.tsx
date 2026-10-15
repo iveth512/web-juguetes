@@ -61,7 +61,7 @@ export function HeroBanner() {
     <section className="grain relative bg-[var(--color-showcase)] text-[var(--color-showcase-text)] transition-colors duration-300">
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-10 md:pb-20 md:pt-16 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-12">
         <div>
-          <h1 className="type-hero misreg">Tu colección empieza aquí</h1>
+          <h1 className="type-hero">Tu colección empieza aquí</h1>
           <p className="type-lead mt-6 max-w-[34ch] text-[var(--color-showcase-muted)]">
             Funko Pop! originales de anime, Marvel, música y mucho más, con envío a toda
             Colombia.

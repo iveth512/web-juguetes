@@ -65,7 +65,7 @@ export function VideoShowcase() {
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
           <div className="max-w-xl">
-            <h2 className="type-section misreg">Así llegan a tu casa</h2>
+            <h2 className="type-section">Así llegan a tu casa</h2>
             <p className="mt-3 text-base text-[var(--color-showcase-muted)]">
               Videos reales de cajas que tenemos en stock.
             </p>

@@ -40,7 +40,7 @@ export function OffersSection() {
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
           <div className="max-w-xl">
-            <h2 className="type-section misreg [--misreg-ink:color-mix(in_srgb,var(--color-primary)_80%,transparent)]">Ofertas de la semana</h2>
+            <h2 className="type-section">Ofertas de la semana</h2>
             <OffersDeadline />
           </div>
           <Link

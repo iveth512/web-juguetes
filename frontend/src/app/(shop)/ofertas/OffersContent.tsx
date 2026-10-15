@@ -171,7 +171,7 @@ export function OffersContent() {
 
           <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
-              <h1 className="type-page misreg">Ofertas de la semana</h1>
+              <h1 className="type-page">Ofertas de la semana</h1>
               <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-[var(--color-stage-text)]">
                 Funko Pop! originales con descuento hasta el domingo. Las unidades son limitadas y
                 el precio vuelve a la normalidad cuando termina la semana.

@@ -401,7 +401,7 @@ function Insights({ insights, products }: { insights: DashboardInsights; product
           { key: 'con', value: coupon.withTicket, label: `Ticket neto con cupón · ${plural(coupon.withOrders, 'pedido', 'pedidos')}`, hi: true },
         ].map((c, i) => (
           <div key={c.key} className="min-w-0">
-            <p className={cn('font-[family-name:var(--font-display)] text-[clamp(3.25rem,7vw,6.5rem)] leading-[0.9] tabular-nums', c.hi ? 'misreg text-[var(--ins-hi)]' : 'text-[var(--color-text)]')}>
+            <p className={cn('font-[family-name:var(--font-display)] text-[clamp(3.25rem,7vw,6.5rem)] leading-[0.9] tabular-nums', c.hi ? 'text-[var(--ins-hi)]' : 'text-[var(--color-text)]')}>
               {formatPrice(c.value)}
             </p>
             <span
@@ -639,7 +639,7 @@ export function AnalysisView() {
       <ChartMotion />
       <header className={cn('pb-20 pt-12 md:pb-28 md:pt-16', GROUNDS.paper)}>
         <div className={containerClass}>
-          <h1 className="type-hero misreg max-w-[14ch] text-[var(--color-text)]">Lo que tus ventas no te están diciendo</h1>
+          <h1 className="type-hero max-w-[14ch] text-[var(--color-text)]">Lo que tus ventas no te están diciendo</h1>
           <p className="mt-8 max-w-[52ch] text-xl leading-relaxed text-[var(--color-text)] md:text-2xl">
             {ready && summary
               ? summary.pedidos > 0
