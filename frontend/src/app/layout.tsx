@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Bricolage_Grotesque, Yellowtail } from "next/font/google";
+import { Bricolage_Grotesque, Instrument_Serif, Yellowtail } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 
-const anton = Anton({
+const instrumentSerif = Instrument_Serif({
   variable: "--font-display",
   subsets: ["latin", "latin-ext"],
   weight: "400",
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -45,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${anton.variable} ${bricolage.variable} ${yellowtail.variable} h-full antialiased`}
+      className={`${instrumentSerif.variable} ${bricolage.variable} ${yellowtail.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

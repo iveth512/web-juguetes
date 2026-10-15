@@ -43,7 +43,7 @@ export type StoryLayout = 'split' | 'reverse' | 'wide' | 'pair';
 function Pull({ pull, stamp, align = 'left' }: { pull: PullFigure; stamp?: StoryStamp; align?: 'left' | 'right' }) {
   return (
     <div className={cn('min-w-0', align === 'right' && 'lg:text-right')}>
-      <p className="misreg font-[family-name:var(--font-display)] text-[clamp(5.5rem,12vw,12rem)] uppercase leading-[0.82] tracking-[-0.01em] text-[var(--ins-hi)] tabular-nums">
+      <p className="misreg font-[family-name:var(--font-display)] text-[clamp(5.5rem,12vw,12rem)] leading-[0.82] tracking-[-0.01em] text-[var(--ins-hi)] tabular-nums">
         {pull.value}
       </p>
       <p className={cn('mt-5 max-w-[24ch] text-lg leading-snug text-[var(--color-text)]', align === 'right' && 'lg:ml-auto')}>{pull.caption}</p>

@@ -17,12 +17,16 @@ function StudioClip({ src, title, href, priority, frame }: (typeof showcase)[num
   useEffect(() => {
     const video = ref.current;
     if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // iOS only autoplays inline video that is muted in the markup; React sets the property, not the attribute.
+    video.muted = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) video.play().catch(() => {});
         else video.pause();
       },
-      { threshold: 0.3 },
+      { threshold: 0.15 },
     );
     observer.observe(video);
     return () => observer.disconnect();
