@@ -150,7 +150,7 @@ export function LoginContent() {
         <p className="mt-6 text-center text-base text-[var(--color-text-muted)]">
           ¿No tienes cuenta?{' '}
           <Link
-            href="/registro"
+            href={redirectTo === '/' ? '/registro' : `/registro?next=${encodeURIComponent(redirectTo)}`}
             className="font-semibold text-[var(--color-primary-text)] hover:underline"
           >
             Regístrate
