@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from django.db import transaction
 from django.db.models import F, Q, Sum
@@ -193,8 +194,12 @@ class AdminProductListCreate(APIView):
             qs = qs.filter(is_active=False)
         elif state == "bajo_stock":
             qs = qs.filter(is_active=True, stock__lte=F("low_stock_threshold"))
-        if params.get("categoria"):
-            qs = qs.filter(category_id=params["categoria"])
+        for param, field in (("categoria", "category_id"), ("franquicia", "franchise_id")):
+            if params.get(param):
+                try:
+                    qs = qs.filter(**{field: uuid.UUID(params[param])})
+                except ValueError:
+                    return Response({"detail": f"El filtro '{param}' no es válido."}, status=status.HTTP_400_BAD_REQUEST)
 
         qs = qs.order_by(ADMIN_ORDERING.get(params.get("orden"), "-created_at"), "name")
 

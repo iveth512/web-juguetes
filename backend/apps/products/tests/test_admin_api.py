@@ -245,3 +245,21 @@ class TestAdminProductUpdate:
         product = _product(deps)
         assert admin_client.delete(f"/api/v1/admin/products/{product.id}/").status_code == 204
         assert not Product.objects.filter(pk=product.pk).exists()
+
+
+@pytest.mark.django_db
+class TestAdminProductFilters:
+    def test_filters_by_franchise(self, admin_client, deps):
+        cat, marvel, brand = deps
+        dc = Franchise.objects.create(name="DC")
+        Product.objects.create(name="Iron Man", sku="M-1", base_price=Decimal("1000"), category=cat, franchise=marvel, brand=brand)
+        Product.objects.create(name="Batman", sku="D-1", base_price=Decimal("1000"), category=cat, franchise=dc, brand=brand)
+
+        resp = admin_client.get("/api/v1/admin/products/", {"franquicia": str(dc.id)})
+
+        assert resp.status_code == 200
+        assert [p["name"] for p in resp.data["results"]] == ["Batman"]
+
+    def test_invalid_franchise_id_is_a_400(self, admin_client):
+        resp = admin_client.get("/api/v1/admin/products/", {"franquicia": "no-es-uuid"})
+        assert resp.status_code == 400
