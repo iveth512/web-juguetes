@@ -257,7 +257,7 @@ body {
 }
 
 /*
- * Type scale. Yellowtail has a single weight, so it is reserved for display
+ * Type scale. Damion has a single weight, so it is reserved for display
  * roles; everything else (prices and product names included) is set in Bricolage Grotesque.
  */
 @layer components {
@@ -269,6 +269,9 @@ body {
     font-weight: 400;
     font-synthesis: none;
     letter-spacing: 0;
+    /* Damion ships one weight; a hairline stroke in the text colour reads as semibold. */
+    -webkit-text-stroke: 0.022em currentColor;
+    paint-order: stroke fill;
     text-wrap: balance;
   }
   .type-hero {
@@ -317,10 +320,12 @@ body {
     line-height: 1;
     font-family: var(--font-display), cursive;
     font-weight: 400;
+    -webkit-text-stroke: 0.02em currentColor;
+    paint-order: stroke fill;
     color: var(--sticker-ink, var(--color-on-primary));
     background: var(--sticker-bg, var(--color-primary));
     border-radius: 999px;
-    padding: 0.32em 0.75em 0.42em;
+    padding: 0.42em 0.95em 0.52em;
     box-shadow:
       0 0 0 3.5px #fff,
       0 0 0 4px rgba(26, 26, 46, 0.1),
@@ -351,6 +356,11 @@ body {
   .type-sub {
     font-size: 1.75rem;
     line-height: 1;
+  }
+  /* Same semibold treatment where the display face is applied directly (big figures). */
+  [class*="font-display"] {
+    -webkit-text-stroke: 0.022em currentColor;
+    paint-order: stroke fill;
   }
   .type-lead {
     font-size: clamp(1.0625rem, 1.4vw, 1.25rem);

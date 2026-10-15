@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Yellowtail } from "next/font/google";
+import { Bricolage_Grotesque, Damion } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 
-const yellowtail = Yellowtail({
+const damion = Damion({
   variable: "--font-display",
   subsets: ["latin"],
   weight: "400",
@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${yellowtail.variable} ${bricolage.variable} h-full antialiased`}
+      className={`${damion.variable} ${bricolage.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

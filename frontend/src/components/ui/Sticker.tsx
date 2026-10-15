@@ -24,7 +24,7 @@ export function Sticker({ children, tone = 'orange', tilt = -7, round = false, c
   const { bg, ink } = TONES[tone];
   return (
     <span
-      className={cn('sticker', round && 'aspect-square !px-0 !py-0 leading-[0.95] whitespace-normal', className)}
+      className={cn('sticker', round && 'aspect-square !p-[0.7em] leading-[0.95] whitespace-normal', className)}
       style={
         {
           '--sticker-bg': bg,
