@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Bricolage_Grotesque } from "next/font/google";
+import { Anton, Bricolage_Grotesque, Yellowtail } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
@@ -9,6 +9,13 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 const anton = Anton({
   variable: "--font-display",
   subsets: ["latin", "latin-ext"],
+  weight: "400",
+  display: "swap",
+});
+
+const yellowtail = Yellowtail({
+  variable: "--font-sticker",
+  subsets: ["latin"],
   weight: "400",
   display: "swap",
 });
@@ -38,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${anton.variable} ${bricolage.variable} h-full antialiased`}
+      className={`${anton.variable} ${bricolage.variable} ${yellowtail.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

@@ -58,6 +58,7 @@ body {
   --color-stage-text: #F4F1FF;
   --color-stage-muted: #B9B0DA;
   /* Showcase surfaces (hero, video band) follow the theme so the toggle visibly responds. */
+  --color-frame-paper: #FBF7EE;
   --color-showcase: #DED6F2;
   --color-showcase-raised: #C9BDEA;
   --color-showcase-text: #1A1A2E;
@@ -118,6 +119,7 @@ body {
   --color-stage-raised: #1A1040;
   --color-stage-text: #F4F1FF;
   --color-stage-muted: #B9B0DA;
+  --color-frame-paper: #2A2148;
   --color-showcase: var(--color-stage);
   --color-showcase-raised: var(--color-stage-raised);
   --color-showcase-text: var(--color-stage-text);
@@ -186,6 +188,7 @@ body {
   --font-sans: var(--font-body);
   --font-heading: var(--font-body);
   --font-display: var(--font-display);
+  --font-sticker: var(--font-sticker);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -226,8 +229,8 @@ body {
   }
   body {
     background-color: var(--color-bg);
-    background-image: url("/textures/grain.png");
-    background-size: 180px 180px;
+    background-image: url("/textures/paper.png");
+    background-size: 256px 256px;
     color: var(--color-text);
     font-family: var(--font-body), system-ui, sans-serif;
   }
@@ -281,10 +284,83 @@ body {
     font-size: clamp(2rem, 3.4vw, 3rem);
     line-height: 1;
   }
-  /* Film grain over flat fields; it only adds a background image, so any bg colour utility still applies. */
+  /* Riso grain over flat colour fields: light and dark ink speckle, so it reads on any ground. */
   .grain {
-    background-image: url("/textures/grain.png");
-    background-size: 180px 180px;
+    background-image: url("/textures/riso-light.png"), url("/textures/riso-dark.png");
+    background-size: 200px 200px, 200px 200px;
+    background-position: 0 0, 97px 61px;
+  }
+  /* Magazine paper: fibres and tooth for light grounds. */
+  .paper {
+    background-image: url("/textures/paper.png"), url("/textures/riso-dark.png");
+    background-size: 256px 256px, 200px 200px;
+  }
+  /* Riso misregistration: a second ink slightly off the first. Only for large display type. */
+  .misreg {
+    text-shadow: 0.05em 0.035em 0 var(--misreg-ink, color-mix(in srgb, var(--color-primary) 75%, transparent));
+  }
+  /* Soft riso tooth over photographs. */
+  .riso-photo {
+    position: relative;
+    isolation: isolate;
+  }
+  .riso-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("/textures/riso-dark.png"), url("/textures/riso-light.png");
+    background-size: 200px 200px, 200px 200px;
+    opacity: 0.55;
+    z-index: 1;
+  }
+  /* Printed-paper frame with an off-register colour block behind it. */
+  .photo-frame {
+    position: relative;
+    isolation: isolate;
+    padding: 7px;
+    border-radius: 10px;
+    background: var(--color-frame-paper) url("/textures/paper.png");
+  }
+  .photo-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--frame-ink, var(--color-primary)) url("/textures/riso-dark.png");
+    transform: translate(6px, 6px);
+  }
+  /* Die-cut vinyl sticker: white cut line, soft lift shadow and a gloss sweep. */
+  .sticker {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    font-family: var(--font-sticker), cursive;
+    font-weight: 400;
+    color: var(--sticker-ink, var(--color-on-primary));
+    background: var(--sticker-bg, var(--color-primary));
+    border-radius: 999px;
+    padding: 0.32em 0.75em 0.42em;
+    box-shadow:
+      0 0 0 3.5px #fff,
+      0 0 0 4px rgba(26, 26, 46, 0.1),
+      0 6px 10px -3px rgba(20, 10, 40, 0.45),
+      0 2px 3px rgba(20, 10, 40, 0.22);
+    transform: rotate(var(--sticker-tilt, -7deg));
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .sticker::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(130deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.08) 38%, transparent 55%);
+    pointer-events: none;
   }
   /* Re-points the surface tokens so shared components (product cards) read on dark fields. */
   .on-dark {
