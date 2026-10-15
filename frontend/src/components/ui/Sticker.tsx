@@ -19,7 +19,7 @@ interface StickerProps {
   className?: string;
 }
 
-/** Die-cut vinyl sticker in the headline serif; for short playful labels only. */
+/** Die-cut vinyl sticker in the headline script; for short playful labels only. */
 export function Sticker({ children, tone = 'orange', tilt = -7, round = false, className }: StickerProps) {
   const { bg, ink } = TONES[tone];
   return (

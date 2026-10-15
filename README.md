@@ -84,7 +84,7 @@ docker-compose.yml      PostgreSQL 16, Redis, backend, worker y frontend
 
 - El frontend corre en Docker como build de producción (`next build` + servidor *standalone*). Las variables `NEXT_PUBLIC_*` se fijan al compilar, por eso van como argumentos de build en `docker-compose.yml`; si cambias una o editas código del frontend, reconstruye con `docker compose up --build frontend`. Para desarrollar con recarga en caliente, usa `cd frontend && npm install && npm run dev` con el backend levantado en Docker.
 - Las fotos y los videos de la tienda son de nuestras propias piezas; los videos de la portada están en `frontend/public/media/`.
-- Estilo visual: Instrument Serif para titulares, Bricolage Grotesque para texto también en las pegatinas; texturas de papel y riso en `frontend/public/textures/`, con modo claro y oscuro.
+- Estilo visual: Yellowtail para titulares y pegatinas, Bricolage Grotesque para texto; texturas de papel y riso en `frontend/public/textures/`, con modo claro y oscuro.
 - Para abrir la tienda desde otro dispositivo con una sola URL (por ejemplo, un túnel), construye el frontend con `NEXT_PUBLIC_API_URL=/api/v1`: el navegador usa entonces el proxy del propio frontend (`/api/v1` y `/media`) y no necesita llegar al puerto 8000. En Git Bash antepón `MSYS_NO_PATHCONV=1` para que la ruta no se convierta en una ruta de Windows.
 - Los correos (confirmación de compra, recuperación de contraseña) se imprimen en la consola del backend en lugar de enviarse.
 - El login con Google aparece solo si configuras tu propio Client ID: en el backend (`backend/.env.example`) y, para el botón, la variable `NEXT_PUBLIC_GOOGLE_CLIENT_ID` en un `.env` junto a `docker-compose.yml` antes de construir.

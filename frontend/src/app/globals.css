@@ -257,7 +257,7 @@ body {
 }
 
 /*
- * Type scale. Instrument Serif has a single weight, so it is reserved for display
+ * Type scale. Yellowtail has a single weight, so it is reserved for display
  * roles; everything else (prices and product names included) is set in Bricolage Grotesque.
  */
 @layer components {
@@ -265,23 +265,23 @@ body {
   .type-page,
   .type-section,
   .type-sub {
-    font-family: var(--font-display), Georgia, serif;
+    font-family: var(--font-display), cursive;
     font-weight: 400;
     font-synthesis: none;
-    letter-spacing: -0.015em;
+    letter-spacing: 0;
     text-wrap: balance;
   }
   .type-hero {
     font-size: clamp(3.5rem, 7.6vw, 7rem);
-    line-height: 0.98;
+    line-height: 1.08;
   }
   .type-page {
     font-size: clamp(2.6rem, 5.2vw, 4.25rem);
-    line-height: 1.02;
+    line-height: 1.1;
   }
   .type-section {
     font-size: clamp(2.2rem, 3.6vw, 3.25rem);
-    line-height: 1.05;
+    line-height: 1.12;
   }
   /* Riso grain over flat colour fields: light and dark ink speckle, so it reads on any ground. */
   .grain {
@@ -315,8 +315,7 @@ body {
     justify-content: center;
     text-align: center;
     line-height: 1;
-    font-family: var(--font-display), Georgia, serif;
-    letter-spacing: -0.01em;
+    font-family: var(--font-display), cursive;
     font-weight: 400;
     color: var(--sticker-ink, var(--color-on-primary));
     background: var(--sticker-bg, var(--color-primary));

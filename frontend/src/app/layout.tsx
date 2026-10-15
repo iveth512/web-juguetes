@@ -1,16 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Instrument_Serif } from "next/font/google";
+import { Bricolage_Grotesque, Yellowtail } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 
-const instrumentSerif = Instrument_Serif({
+const yellowtail = Yellowtail({
   variable: "--font-display",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   weight: "400",
-  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -39,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${instrumentSerif.variable} ${bricolage.variable} h-full antialiased`}
+      className={`${yellowtail.variable} ${bricolage.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
