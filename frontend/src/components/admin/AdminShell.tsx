@@ -41,16 +41,16 @@ export function AdminShell({ title, actions, children }: {
     <ProtectedRoute>
       <AdminGuard>
         <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-          <nav aria-label="Administracion" className="mb-6 flex flex-wrap gap-1 border-b border-[var(--color-border)]">
+          <nav aria-label="Administración" className="mb-6 flex flex-wrap gap-1 border-b border-[var(--color-border)]">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={isActive(item.href) ? 'page' : undefined}
                 className={cn(
-                  'whitespace-nowrap px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors',
+                  'whitespace-nowrap px-4 py-3 text-base font-semibold border-b-2 -mb-px transition-colors',
                   isActive(item.href)
-                    ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+                    ? 'border-[var(--color-primary)] text-[var(--color-primary-text)]'
                     : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                 )}
               >
@@ -59,7 +59,7 @@ export function AdminShell({ title, actions, children }: {
             ))}
           </nav>
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-[var(--color-text)]">{title}</h1>
+            <h1 className="type-page text-[var(--color-text)]">{title}</h1>
             {actions}
           </div>
           {children}
@@ -70,7 +70,7 @@ export function AdminShell({ title, actions, children }: {
 }
 
 export const adminInputClass =
-  'w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]';
+  'w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]';
 
 export const adminCardClass =
   'rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]';

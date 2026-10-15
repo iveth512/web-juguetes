@@ -11,7 +11,7 @@ export function TopProductsChart({ products }: { products: ProductSales[] }) {
   const max = Math.max(...products.map((p) => Number(p.ingresos)), 1);
 
   return (
-    <ul className="space-y-3" aria-label="Productos con mas ingresos">
+    <ul className="space-y-3" aria-label="Productos con más ingresos">
       {products.map((p) => {
         const value = Number(p.ingresos);
         const pct = Math.max((value / max) * 100, 0.5);

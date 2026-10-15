@@ -91,9 +91,9 @@ function AdminProductList() {
           <option value="bajo_stock">Stock bajo</option>
         </select>
         <select aria-label="Ordenar" value={orden} onChange={(e) => { setOrden(e.target.value); setPage(1); }} className={`${adminInputClass} md:w-48`}>
-          <option value="recientes">Mas recientes</option>
+          <option value="recientes">Más recientes</option>
           <option value="nombre">Nombre A-Z</option>
-          <option value="vendidos">Mas vendidos</option>
+          <option value="vendidos">Más vendidos</option>
           <option value="stock">Menor stock</option>
           <option value="precio">Precio menor</option>
           <option value="-precio">Precio mayor</option>
@@ -110,9 +110,9 @@ function AdminProductList() {
       <div className={`${adminCardClass} overflow-x-auto`}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+            <tr className="border-b border-[var(--color-border)] text-left text-sm font-medium text-[var(--color-text-muted)]">
               <th className="px-4 py-3 font-semibold">Producto</th>
-              <th className="hidden xl:table-cell px-4 py-3 font-semibold">Categoria</th>
+              <th className="hidden xl:table-cell px-4 py-3 font-semibold">Categoría</th>
               <th className="px-4 py-3 font-semibold text-right">Precio</th>
               <th className="px-4 py-3 font-semibold text-right">Stock</th>
               <th className="px-4 py-3 font-semibold text-right">Vendidos</th>
@@ -187,7 +187,7 @@ function AdminProductList() {
           <span>{data.count} productos</span>
           <div className="flex items-center gap-2">
             <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 disabled:opacity-40">Anterior</button>
-            <span>Pagina {page} de {totalPages}</span>
+            <span>Página {page} de {totalPages}</span>
             <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 disabled:opacity-40">Siguiente</button>
           </div>
         </div>
@@ -203,7 +203,7 @@ export default function AdminProductsPage() {
       actions={
         <Link
           href="/panel/productos/nuevo"
-          className="inline-flex justify-center rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-hover)]"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-base font-semibold text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)]"
         >
           + Nuevo producto
         </Link>

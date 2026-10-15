@@ -65,24 +65,24 @@ export function ProductForm({ product, onSaved }: Props) {
     const e: Errors = {};
     if (!form.name.trim()) e.name = 'El nombre es obligatorio.';
     if (!form.sku.trim()) e.sku = 'El SKU es obligatorio.';
-    if (!form.category_id) e.category_id = 'Selecciona una categoria.';
+    if (!form.category_id) e.category_id = 'Selecciona una categoría.';
     if (!form.franchise_id) e.franchise_id = 'Selecciona una franquicia.';
     if (!form.brand_id) e.brand_id = 'Selecciona una marca.';
     const base = Number(form.base_price);
-    if (form.base_price === '' || Number.isNaN(base) || base < 0) e.base_price = 'Ingresa un precio valido.';
+    if (form.base_price === '' || Number.isNaN(base) || base < 0) e.base_price = 'Ingresa un precio válido.';
     if (form.compare_price !== '' && Number(form.compare_price) <= base) {
       e.compare_price = 'Debe ser mayor que el precio base.';
     }
     const stock = Number(form.stock);
-    if (!Number.isInteger(stock) || stock < 0) e.stock = 'El stock debe ser un numero entero mayor o igual a 0.';
+    if (!Number.isInteger(stock) || stock < 0) e.stock = 'El stock debe ser un número entero mayor o igual a 0.';
     if (form.is_on_sale) {
       const pct = Number(form.sale_percentage);
       if (!Number.isInteger(pct) || pct < 1 || pct > 100) e.sale_percentage = 'Entre 1 y 100.';
     }
     const badImage = newImages.find((f) => !ALLOWED_TYPES.includes(f.type) || f.size > MAX_IMAGE_MB * 1024 * 1024);
-    if (badImage) e.images = `${badImage.name}: usa JPG, PNG o WEBP de maximo ${MAX_IMAGE_MB} MB.`;
+    if (badImage) e.images = `${badImage.name}: usa JPG, PNG o WEBP de máximo ${MAX_IMAGE_MB} MB.`;
     const keptImages = (product?.images.length ?? 0) - removeIds.length;
-    if (keptImages + newImages.length > 10) e.images = 'Maximo 10 imagenes por producto.';
+    if (keptImages + newImages.length > 10) e.images = 'Máximo 10 imágenes por producto.';
     return e;
   };
 
@@ -170,17 +170,17 @@ export function ProductForm({ product, onSaved }: Props) {
       </div>
 
       <div>
-        <label htmlFor="short_description" className={labelClass}>Descripcion corta</label>
+        <label htmlFor="short_description" className={labelClass}>Descripción corta</label>
         <input id="short_description" className={inputClass} value={form.short_description} onChange={(e) => set('short_description', e.target.value)} maxLength={500} />
       </div>
 
       <div>
-        <label htmlFor="description" className={labelClass}>Descripcion</label>
+        <label htmlFor="description" className={labelClass}>Descripción</label>
         <textarea id="description" className={`${inputClass} min-h-[110px] resize-y`} value={form.description} onChange={(e) => set('description', e.target.value)} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {select('category_id', 'Categoria', options.categories)}
+        {select('category_id', 'Categoría', options.categories)}
         {select('franchise_id', 'Franquicia', options.franchises)}
         {select('brand_id', 'Marca', options.brands)}
       </div>
@@ -231,7 +231,7 @@ export function ProductForm({ product, onSaved }: Props) {
       )}
 
       <div>
-        <span className={labelClass}>Imagenes</span>
+        <span className={labelClass}>Imágenes</span>
         {product && product.images.length > 0 && (
           <ul className="mb-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {product.images.map((img) => {
@@ -270,7 +270,7 @@ export function ProductForm({ product, onSaved }: Props) {
         />
         {fieldError('images') ?? (
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-            JPG, PNG o WEBP, maximo {MAX_IMAGE_MB} MB cada una.{' '}
+            JPG, PNG o WEBP, máximo {MAX_IMAGE_MB} MB cada una.{' '}
             {isEdit ? 'Las nuevas se agregan a las actuales.' : 'La primera sera la imagen principal.'}
           </p>
         )}
@@ -280,7 +280,7 @@ export function ProductForm({ product, onSaved }: Props) {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[var(--color-primary)] text-white font-semibold text-sm hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
+          className="w-full sm:w-auto min-h-11 px-7 py-2.5 rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] font-semibold text-base hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
         >
           {submitting ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear producto'}
         </button>

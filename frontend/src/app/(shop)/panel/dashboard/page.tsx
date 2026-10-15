@@ -27,9 +27,9 @@ function presetRange(preset: string): DateRange {
 }
 
 const PRESETS = [
-  { key: '7', label: '7 dias' },
+  { key: '7', label: '7 días' },
   { key: '30', label: '30 días' },
-  { key: '90', label: '90 dias' },
+  { key: '90', label: '90 días' },
   { key: 'mes', label: 'Este mes' },
 ];
 
@@ -97,7 +97,7 @@ function SalesHistory({ range }: { range: DateRange }) {
   const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_SIZE)) : 1;
 
   return (
-    <Panel title="Historial de ventas" subtitle="Pedidos del periodo seleccionado, del mas reciente al mas antiguo.">
+    <Panel title="Historial de ventas" subtitle="Pedidos del periodo seleccionado, del más reciente al más antiguo.">
       <div className="mb-4 flex flex-col gap-3 md:flex-row">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por cliente, correo o # de pedido" aria-label="Buscar pedidos" className={`${adminInputClass} md:max-w-sm`} />
         <select aria-label="Estado" value={estado} onChange={(e) => { setEstado(e.target.value); setPage(1); }} className={`${adminInputClass} md:w-80`}>
@@ -117,7 +117,7 @@ function SalesHistory({ range }: { range: DateRange }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+            <tr className="border-b border-[var(--color-border)] text-left text-sm font-medium text-[var(--color-text-muted)]">
               <th className="px-3 py-2 font-semibold">Pedido</th>
               <th className="px-3 py-2 font-semibold">Fecha</th>
               <th className="px-3 py-2 font-semibold">Cliente</th>
@@ -170,7 +170,7 @@ function SalesHistory({ range }: { range: DateRange }) {
           <span>{data.count} pedidos</span>
           <div className="flex items-center gap-2">
             <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 disabled:opacity-40">Anterior</button>
-            <span>Pagina {page} de {totalPages}</span>
+            <span>Página {page} de {totalPages}</span>
             <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 disabled:opacity-40">Siguiente</button>
           </div>
         </div>
@@ -243,7 +243,7 @@ function Dashboard() {
               type="button"
               aria-pressed={preset === p.key}
               onClick={() => choosePreset(p.key)}
-              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${preset === p.key ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'}`}
+              className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${preset === p.key ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'}`}
             >
               {p.label}
             </button>
@@ -332,7 +332,7 @@ function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="Ventas por producto" subtitle="Top 10 por ingresos (precio de venta × unidades, antes de descuentos y envio)">
+        <Panel title="Ventas por producto" subtitle="Top 10 por ingresos (precio de venta × unidades, antes de descuentos y envío)">
           {!byProduct ? (
             <div className="h-60 animate-pulse rounded bg-[var(--color-bg-alt)]" />
           ) : byProduct.productos.length === 0 ? (

@@ -50,7 +50,7 @@ export function SalesByDayChart({ days }: { days: SalesDay[] }) {
         width={width}
         height={HEIGHT}
         role="img"
-        aria-label={`Ventas por dia: ${formatPrice(total)} en ${days.length} dias`}
+        aria-label={`Ventas por día: ${formatPrice(total)} en ${days.length} días`}
         className="block"
       >
         {ticks.map((t) => (
