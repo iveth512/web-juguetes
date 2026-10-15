@@ -47,7 +47,7 @@ export default function EnviosPage() {
         className="grain bg-[var(--color-stage)] text-[var(--color-stage-text)]"
       >
         <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 grid gap-6 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-end md:gap-16">
-          <h2 id="envio-gratis" className="type-hero">
+          <h2 id="envio-gratis" className="type-hero misreg">
             Envío gratis desde <span className="tabular-nums">$250.000</span>
           </h2>
           <p className="max-w-[48ch] text-lg leading-relaxed text-[var(--color-stage-text)]">

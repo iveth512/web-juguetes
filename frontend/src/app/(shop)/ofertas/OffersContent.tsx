@@ -5,10 +5,10 @@ import Link from 'next/link';
 import {
   ChevronLeft,
   ChevronRight,
-  Tag,
 } from 'lucide-react';
 import { useOnSaleProducts } from '@/hooks/useProducts';
 import { useOffersCountdown } from '@/hooks/useOffersCountdown';
+import { Sticker } from '@/components/ui/Sticker';
 import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCard';
 import { formatPrice } from '@/lib/utils';
 import type { ProductListItem } from '@/types/product';
@@ -171,7 +171,7 @@ export function OffersContent() {
 
           <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
-              <h1 className="type-page">Ofertas de la semana</h1>
+              <h1 className="type-page misreg">Ofertas de la semana</h1>
               <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-[var(--color-stage-text)]">
                 Funko Pop! originales con descuento hasta el domingo. Las unidades son limitadas y
                 el precio vuelve a la normalidad cuando termina la semana.
@@ -242,14 +242,16 @@ export function OffersContent() {
             ))}
           </div>
         ) : paginatedProducts.length === 0 ? (
-          <div className="flex flex-col items-start py-16 max-w-[52ch]">
-            <Tag strokeWidth={1.75} className="w-8 h-8 text-[var(--color-text-muted)] mb-4" />
-            <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
+          <div className="grain relative mt-4 flex max-w-2xl flex-col items-start rounded-2xl bg-[var(--color-showcase)] px-6 pb-8 pt-12 text-[var(--color-showcase-text)] md:px-10">
+            <Sticker tone="green" tilt={-6} className="absolute -top-4 -left-2 z-10 text-xl md:text-2xl">
+              Se agotó la magia
+            </Sticker>
+            <h2 className="text-2xl font-semibold mb-2">
               {allProducts.length === 0
                 ? 'Esta semana no hay ofertas activas'
                 : 'No hay ofertas en este rango'}
             </h2>
-            <p className="text-base leading-relaxed text-[var(--color-text-muted)] mb-6">
+            <p className="text-base leading-relaxed text-[var(--color-showcase-muted)] mb-6">
               {allProducts.length === 0
                 ? 'Explora el catálogo completo mientras llega la próxima selección.'
                 : 'Prueba con otro rango de descuento.'}

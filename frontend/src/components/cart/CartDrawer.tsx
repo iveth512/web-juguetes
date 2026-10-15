@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Check, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
+import { Sticker } from '@/components/ui/Sticker';
 import type { CartItem } from '@/types/cart';
 
 const AUTO_DISMISS_MS = 4000;
@@ -106,7 +107,11 @@ export function CartDrawer() {
           </div>
 
           <div className="mt-2 flex items-center gap-3">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-alt)]">
+            <div className="relative shrink-0">
+            <Sticker tone="green" tilt={-10} className="absolute -top-2 -left-2 z-10 text-sm">
+              ¡Tuyo!
+            </Sticker>
+            <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-[var(--color-bg-alt)]">
               {notice.item.image && (
                 <Image
                   src={notice.item.image}
@@ -117,6 +122,7 @@ export function CartDrawer() {
                   unoptimized
                 />
               )}
+            </div>
             </div>
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--color-text)]">

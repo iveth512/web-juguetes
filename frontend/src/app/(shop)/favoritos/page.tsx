@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Heart } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { Sticker } from '@/components/ui/Sticker';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useWishlist } from '@/hooks/useWishlist';
 import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCard';
@@ -40,12 +41,14 @@ function FavoritosContent() {
           ))}
         </div>
       ) : wishlist.length === 0 ? (
-        <div className="flex flex-col items-start max-w-[52ch]">
-          <Heart strokeWidth={1.75} className="w-8 h-8 text-[var(--color-text-muted)] mb-4" />
-          <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
+        <div className="grain relative mt-4 flex max-w-2xl flex-col items-start rounded-2xl bg-[var(--color-showcase)] px-6 pb-8 pt-12 text-[var(--color-showcase-text)] md:px-10">
+          <Sticker tone="orange" tilt={-6} className="absolute -top-4 -left-2 z-10 text-xl md:text-2xl">
+            Corazón libre
+          </Sticker>
+          <h2 className="text-2xl font-semibold mb-2">
             Aún no tienes favoritos
           </h2>
-          <p className="text-base leading-relaxed text-[var(--color-text-muted)] mb-6">
+          <p className="text-base leading-relaxed text-[var(--color-showcase-muted)] mb-6">
             Toca el corazón de cualquier figura para guardarla aquí y encontrarla después.
           </p>
           <Link

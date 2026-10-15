@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Sticker } from '@/components/ui/Sticker';
 
 export const metadata: Metadata = {
   title: 'Página no encontrada — Juguetes para Frikis',
@@ -17,14 +18,24 @@ const SUGGESTED_LINKS = [
 
 export default function NotFound() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-16 md:py-24">
-      <div className="grid gap-10 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-16">
-        <p aria-hidden="true" className="type-hero text-[clamp(7rem,18vw,12rem)] text-[var(--color-primary)]">
-          404
-        </p>
+    <div className="pb-16 md:pb-24">
+      <div className="grain bg-[var(--color-stage)] text-[var(--color-stage-text)]">
+      <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-14 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-16 md:py-20">
+        <div className="relative justify-self-start pr-6 pb-4">
+          <p
+            aria-hidden="true"
+            className="type-hero misreg text-[clamp(7rem,18vw,12rem)] text-[var(--color-primary)]"
+            style={{ '--misreg-ink': 'var(--color-accent)' } as React.CSSProperties}
+          >
+            404
+          </p>
+          <Sticker tone="cream" tilt={8} className="absolute bottom-0 right-0 z-10 text-xl md:text-2xl">
+            ¡Se escapó de su caja!
+          </Sticker>
+        </div>
         <div className="max-w-[52ch]">
-          <h1 className="type-page text-[var(--color-text)]">Esta figura no está en la repisa</h1>
-          <p className="mt-4 text-base leading-relaxed text-[var(--color-text)]">
+          <h1 className="type-page">Esta figura no está en la repisa</h1>
+          <p className="mt-4 text-base leading-relaxed text-[var(--color-stage-text)]">
             La página que buscas no existe o cambió de dirección. Revisa el enlace o sigue
             buscando en el catálogo.
           </p>
@@ -37,14 +48,16 @@ export default function NotFound() {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center min-h-11 text-base font-semibold text-[var(--color-primary-text)] underline underline-offset-4"
+              className="inline-flex items-center min-h-11 text-base font-semibold text-[var(--color-stage-text)] underline underline-offset-4 hover:text-[var(--color-primary)]"
             >
               Volver al inicio
             </Link>
           </div>
         </div>
       </div>
+      </div>
 
+      <div className="mx-auto w-full max-w-7xl px-4">
       <section aria-labelledby="sugerencias" className="mt-16 md:mt-24">
         <h2 id="sugerencias" className="text-xl font-semibold text-[var(--color-text)]">
           O empieza por una franquicia
@@ -62,6 +75,7 @@ export default function NotFound() {
           ))}
         </ul>
       </section>
+      </div>
     </div>
   );
 }

@@ -314,22 +314,13 @@ body {
     opacity: 0.55;
     z-index: 1;
   }
-  /* Printed-paper frame with an off-register colour block behind it. */
+  /* Printed-paper frame with an off-register colour block behind it (a solid offset, like a second ink pass). */
   .photo-frame {
     position: relative;
-    isolation: isolate;
     padding: 7px;
     border-radius: 10px;
     background: var(--color-frame-paper) url("/textures/paper.png");
-  }
-  .photo-frame::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: var(--frame-ink, var(--color-primary)) url("/textures/riso-dark.png");
-    transform: translate(6px, 6px);
+    box-shadow: 6px 6px 0 0 var(--frame-ink, var(--color-primary));
   }
   /* Die-cut vinyl sticker: white cut line, soft lift shadow and a gloss sweep. */
   .sticker {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
+import { Sticker } from '@/components/ui/Sticker';
 import { useCart } from '@/hooks/useCart';
 import { CartItem } from '@/components/cart/CartItem';
 import { CartSummary } from '@/components/cart/CartSummary';
@@ -76,10 +76,12 @@ export default function CarritoPage() {
       </nav>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center py-16 text-center md:py-24">
-          <ShoppingCart className="mb-6 h-16 w-16 text-[var(--color-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
-          <h1 className="type-page mb-4 text-[var(--color-text)]">Tu carrito está vacío</h1>
-          <p className="mb-8 max-w-md text-base text-[var(--color-text-muted)]">
+        <div className="grain relative mx-auto my-10 flex max-w-3xl flex-col items-center rounded-2xl bg-[var(--color-showcase)] px-6 pb-12 pt-16 text-center text-[var(--color-showcase-text)] md:my-16 md:px-12">
+          <Sticker tone="orange" tilt={-7} className="absolute -top-4 -left-2 z-10 text-xl md:text-2xl">
+            Ni un Funko a la vista
+          </Sticker>
+          <h1 className="type-page mb-4">Tu carrito está vacío</h1>
+          <p className="mb-8 max-w-md text-base text-[var(--color-showcase-muted)]">
             Aún no has agregado productos. Explora los Funko Pop! y encuentra tu próximo favorito.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -91,7 +93,7 @@ export default function CarritoPage() {
             </Link>
             <Link
               href="/ofertas"
-              className="flex min-h-12 items-center rounded-full bg-[var(--color-bg-alt)] px-6 text-base font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-border)]"
+              className="flex min-h-12 items-center rounded-full bg-[var(--color-showcase-raised)] px-6 text-base font-semibold text-[var(--color-showcase-text)] transition-opacity hover:opacity-85"
             >
               Ver ofertas
             </Link>

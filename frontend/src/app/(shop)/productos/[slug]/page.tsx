@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProduct } from '@/lib/api';
-import { ProductGallery } from '@/components/product/ProductGallery';
+import { ProductGallery, type GalleryBadge } from '@/components/product/ProductGallery';
 import { ProductInfo } from '@/components/product/ProductInfo';
 import { ProductCard } from '@/components/product/ProductCard';
 import { ReviewSection } from '@/components/product/ReviewSection';
@@ -42,19 +42,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function getBadge(product: ProductDetail) {
+function getBadge(product: ProductDetail): GalleryBadge | null {
+  const soldOut =
+    product.has_variants && product.variants.length > 0
+      ? product.variants.every((v) => v.stock <= 0)
+      : product.stock <= 0;
+  if (soldOut) return { label: 'Agotado', tone: 'ink' };
   if (product.is_on_sale && product.sale_percentage) {
-    return {
-      label: `−${product.sale_percentage}%`,
-      className: 'bg-[var(--color-accent)] text-[var(--color-on-accent)]',
-    };
+    return { label: `−${product.sale_percentage} %`, tone: 'orange' };
   }
-  if (product.is_new) {
-    return {
-      label: 'Nuevo',
-      className: 'bg-[var(--color-accent)] text-[var(--color-on-accent)]',
-    };
-  }
+  if (product.is_new) return { label: '¡Nuevo!', tone: 'green' };
   return null;
 }
 

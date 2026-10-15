@@ -12,6 +12,7 @@ import {
 import { useSearch } from '@/hooks/useSearch';
 import { useFranchises } from '@/hooks/useProducts';
 import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCard';
+import { Sticker } from '@/components/ui/Sticker';
 
 const SORT_OPTIONS = [
   { label: 'Relevancia', value: 'relevance' },
@@ -183,13 +184,36 @@ export function SearchContent() {
           </p>
         </div>
       ) : sortedResults.length === 0 ? (
-        <div className="max-w-[60ch]">
-          <h2 className="text-2xl font-semibold text-[var(--color-text)]">
-            Sin resultados para &ldquo;{query}&rdquo;
-          </h2>
-          <p className="mt-2 text-base leading-relaxed text-[var(--color-text-muted)]">
-            Revisa la ortografía o usa un término más general, como el nombre de la saga.
-          </p>
+        <div className="max-w-3xl">
+          <div className="grain relative mt-4 rounded-2xl bg-[var(--color-stage)] px-6 pb-8 pt-12 text-[var(--color-stage-text)] md:px-10 md:pb-10">
+            <Sticker tone="green" tilt={-6} className="absolute -top-4 -left-2 z-10 text-xl md:text-2xl">
+              ¿Multiverso equivocado?
+            </Sticker>
+            <h2 className="text-2xl font-semibold [overflow-wrap:anywhere]">
+              Sin resultados para &ldquo;{query}&rdquo;
+            </h2>
+            <p className="mt-2 max-w-[56ch] text-base leading-relaxed text-[var(--color-stage-muted)]">
+              Revisa la ortografía o usa un término más general, como el nombre de la saga.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setInputValue('');
+                  router.push('/buscar');
+                }}
+                className="inline-flex min-h-11 items-center rounded-full bg-[var(--color-primary)] px-6 text-sm font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
+              >
+                Limpiar búsqueda
+              </button>
+              <Link
+                href="/productos"
+                className="inline-flex min-h-11 items-center rounded-full bg-[var(--color-stage-raised)] px-6 text-sm font-semibold text-[var(--color-stage-text)] transition-colors hover:opacity-85"
+              >
+                Ver todo el catálogo
+              </Link>
+            </div>
+          </div>
           {franchiseSuggestions}
         </div>
       ) : (

@@ -4,12 +4,18 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Maximize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Sticker, type StickerTone } from '@/components/ui/Sticker';
 import type { ProductImage } from '@/types/product';
 
 interface ProductGalleryProps {
   images: ProductImage[];
   productName: string;
-  badge?: { label: string; className: string } | null;
+  badge?: GalleryBadge | null;
+}
+
+export interface GalleryBadge {
+  label: string;
+  tone: StickerTone;
 }
 
 export function ProductGallery({ images, productName, badge }: ProductGalleryProps) {
@@ -70,10 +76,17 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
   return (
     <div className="relative">
       <div className="flex flex-col gap-3">
+        <div className="relative mr-1.5 mb-1.5">
+        {badge && (
+          <Sticker tone={badge.tone} tilt={-8} className="absolute -top-3 -left-2 z-10 text-2xl">
+            {badge.label}
+          </Sticker>
+        )}
+        <div className="photo-frame" style={{ '--frame-ink': 'var(--color-primary)' } as React.CSSProperties}>
         {/* Main image */}
         <div
           ref={mainRef}
-          className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-[var(--color-bg-alt)] md:cursor-crosshair"
+          className="riso-photo aspect-square cursor-zoom-in overflow-hidden rounded-md bg-[var(--color-bg-alt)] md:cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -95,18 +108,6 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
             <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-base">
               Imagen no disponible
             </div>
-          )}
-
-          {/* Badge */}
-          {badge && (
-            <span
-              className={cn(
-                'absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-sm font-semibold',
-                badge.className
-              )}
-            >
-              {badge.label}
-            </span>
           )}
 
           {/* Lens indicator (desktop only) */}
@@ -137,6 +138,8 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
               Ver en grande
             </button>
           )}
+        </div>
+        </div>
         </div>
 
         {/* Zoom panel (desktop, absolutely positioned right of gallery) */}

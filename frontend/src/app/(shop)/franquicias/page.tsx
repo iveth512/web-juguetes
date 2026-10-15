@@ -9,6 +9,8 @@ import { getProducts } from '@/lib/api';
 import { useFranchises } from '@/hooks/useProducts';
 import type { ProductListItem } from '@/types/product';
 
+const FRAME_INKS = ['var(--color-primary)', 'var(--color-accent)'];
+
 const PAGE_SIZE = 48;
 
 async function getAllProducts(): Promise<ProductListItem[]> {
@@ -98,12 +100,16 @@ export default function FranquiciasPage() {
                 <div className="mt-3 h-5 w-2/3 rounded bg-[var(--color-bg-alt)] animate-pulse" />
               </li>
             ))
-          : visible.map((franchise) => {
+          : visible.map((franchise, index) => {
               const summary = summaries.get(franchise.name);
               return (
                 <li key={franchise.id}>
                   <Link href={`/productos?franchise=${franchise.slug}`} className="group block">
-                    <div className="grain relative aspect-[4/5] overflow-hidden rounded-xl bg-[var(--color-stage)]">
+                    <div
+                      className="photo-frame mr-1.5"
+                      style={{ '--frame-ink': FRAME_INKS[index % FRAME_INKS.length] } as React.CSSProperties}
+                    >
+                    <div className="grain riso-photo aspect-[4/5] overflow-hidden rounded-md bg-[var(--color-stage)]">
                       {summary?.image ? (
                         <Image
                           src={summary.image}
@@ -121,6 +127,7 @@ export default function FranquiciasPage() {
                           {franchise.name.charAt(0)}
                         </span>
                       )}
+                    </div>
                     </div>
                     <h2 className="mt-3 text-lg font-semibold leading-snug text-[var(--color-text)] group-hover:text-[var(--color-primary-text)] transition-colors">
                       {franchise.name}

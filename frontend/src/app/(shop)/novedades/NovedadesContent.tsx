@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { Sticker } from '@/components/ui/Sticker';
 import { useNewProducts } from '@/hooks/useProducts';
 import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCard';
 
@@ -38,12 +39,14 @@ export function NovedadesContent() {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="flex flex-col items-start py-16 max-w-[52ch]">
-          <Sparkles strokeWidth={1.75} className="w-8 h-8 text-[var(--color-text-muted)] mb-4" />
-          <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
+        <div className="grain relative mt-4 flex max-w-2xl flex-col items-start rounded-2xl bg-[var(--color-showcase)] px-6 pb-8 pt-12 text-[var(--color-showcase-text)] md:px-10">
+          <Sticker tone="purple" tilt={-6} className="absolute -top-4 -left-2 z-10 text-xl md:text-2xl">
+            Aún en el portal
+          </Sticker>
+          <h2 className="text-2xl font-semibold mb-2">
             No hay lanzamientos nuevos esta semana
           </h2>
-          <p className="text-base leading-relaxed text-[var(--color-text-muted)] mb-6">
+          <p className="text-base leading-relaxed text-[var(--color-showcase-muted)] mb-6">
             Mientras llegan, explora el catálogo completo.
           </p>
           <Link

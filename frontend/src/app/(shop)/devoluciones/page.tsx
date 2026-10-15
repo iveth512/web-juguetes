@@ -58,7 +58,11 @@ export default function DevolucionesPage() {
         className="grain bg-[var(--color-stage)] text-[var(--color-stage-text)]"
       >
         <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 grid gap-8 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-16">
-          <h2 id="plazo" className="type-hero text-[var(--color-primary)]">
+          <h2
+            id="plazo"
+            className="type-hero misreg text-[var(--color-primary)]"
+            style={{ '--misreg-ink': 'var(--color-accent)' } as React.CSSProperties}
+          >
             30 días
           </h2>
           <p className="max-w-[52ch] text-lg leading-relaxed">

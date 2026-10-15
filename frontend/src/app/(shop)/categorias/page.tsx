@@ -8,6 +8,8 @@ import { getProducts } from '@/lib/api';
 import { useCategories } from '@/hooks/useProducts';
 import type { Category } from '@/types/product';
 
+const FRAME_INKS = ['var(--color-primary)', 'var(--color-accent)', 'var(--color-showcase)', 'var(--color-primary)'];
+
 const PREVIEW_COUNT = 4;
 
 function CategoryBand({ category }: { category: Category }) {
@@ -47,12 +49,14 @@ function CategoryBand({ category }: { category: Category }) {
 
       {previews.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
-          {previews.map((product) => (
+          {previews.map((product, index) => (
             <Link
               key={product.id}
               href={`/productos/${product.slug}`}
-              className="group relative aspect-[4/5] overflow-hidden rounded-xl bg-[var(--color-stage-raised)]"
+              className="group photo-frame block mr-1.5 mb-1.5"
+              style={{ '--frame-ink': FRAME_INKS[index % FRAME_INKS.length] } as React.CSSProperties}
             >
+              <span className="riso-photo block aspect-[4/5] overflow-hidden rounded-md bg-[var(--color-stage-raised)]">
               <Image
                 src={product.primary_image_url as string}
                 alt={product.name}
@@ -61,6 +65,7 @@ function CategoryBand({ category }: { category: Category }) {
                 className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                 unoptimized
               />
+              </span>
             </Link>
           ))}
         </div>
