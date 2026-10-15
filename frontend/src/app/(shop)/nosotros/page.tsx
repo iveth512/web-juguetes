@@ -1,156 +1,143 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Sobre Nosotros — Juguetes para Frikis',
+  title: 'Nosotros — Juguetes para Frikis',
   description:
-    'Conoce la historia de Juguetes para Frikis, tu tienda de coleccionables favorita en Colombia. Importamos directamente desde USA.',
+    'Somos una tienda colombiana de Funko Pop! originales, hecha por coleccionistas para coleccionistas.',
 };
+
+const values = [
+  {
+    title: 'Autenticidad',
+    text: 'Solo vendemos figuras originales y licenciadas. Nunca réplicas.',
+  },
+  {
+    title: 'Comunidad',
+    text: 'Somos coleccionistas como tú: entendemos lo que significa encontrar esa figura que faltaba.',
+  },
+  {
+    title: 'Servicio',
+    text: 'Te acompañamos desde que eliges tu figura hasta que llega a tu puerta.',
+  },
+];
 
 export default function NosotrosPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      {/* Breadcrumb */}
-      <nav className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-        <Link href="/" className="hover:underline">Inicio</Link>
-        <span className="mx-2">/</span>
-        <span>Sobre Nosotros</span>
-      </nav>
+    <div className="pb-16 md:pb-24">
+      <div className="max-w-7xl mx-auto px-4 pt-6">
+        <nav
+          aria-label="Ruta de navegación"
+          className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]"
+        >
+          <Link href="/" className="hover:text-[var(--color-primary-text)] transition-colors">
+            Inicio
+          </Link>
+          <ChevronRight strokeWidth={1.75} className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="text-[var(--color-text)] font-medium" aria-current="page">
+            Nosotros
+          </span>
+        </nav>
 
-      {/* Title */}
-      <h1
-        className="font-[family-name:var(--font-heading)] font-bold text-3xl md:text-4xl mb-4"
-        style={{ color: 'var(--color-text)' }}
-      >
-        Sobre Nosotros
-      </h1>
+        <header className="mt-6 mb-12 md:mb-16">
+          <h1 className="type-page text-[var(--color-text)]">Nosotros</h1>
+          <p className="mt-4 max-w-[62ch] type-lead text-[var(--color-text)]">
+            Somos una tienda colombiana apasionada por los coleccionables y la cultura friki. Nos
+            mueven el anime, los cómics, el cine y todo lo que hace especial a nuestra comunidad.
+          </p>
+        </header>
+      </div>
 
-      {/* Hero text */}
-      <p
-        className="text-lg mb-10 leading-relaxed"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        Somos una tienda colombiana apasionada por los coleccionables, los juguetes y la cultura
-        friki. Nacimos del amor por Pokemon, los Funko Pop, los mangas y todo lo que hace especial
-        a nuestra comunidad.
-      </p>
-
-      <div className="space-y-10">
-        {/* Nuestra historia */}
-        <section>
-          <h2
-            className="font-[family-name:var(--font-heading)] font-bold text-2xl mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
+      <div className="max-w-7xl mx-auto px-4">
+        <section
+          aria-labelledby="historia"
+          className="grid gap-6 py-12 md:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] md:gap-16 md:py-16"
+        >
+          <h2 id="historia" className="type-section text-[var(--color-text)]">
             Nuestra historia
           </h2>
-          <div className="space-y-4" style={{ color: 'var(--color-text-muted)' }}>
+          <div className="max-w-[65ch] flex flex-col gap-4 text-base leading-relaxed text-[var(--color-text)]">
             <p>
-              Juguetes para Frikis nacio en 2020 como un pequeno emprendimiento familiar en Bogota.
-              Lo que comenzo como una coleccion personal de figuras y cartas Pokemon rapidamente
-              se convirtio en una tienda online gracias a la demanda de la comunidad friki colombiana.
+              Juguetes para Frikis nació como un emprendimiento familiar en Bogotá. Lo que empezó
+              como una colección personal se convirtió en una tienda en línea cuando otros
+              coleccionistas empezaron a preguntarnos dónde conseguir sus figuras.
             </p>
             <p>
-              Hoy somos uno de los destinos favoritos para coleccionistas en Colombia, con miles
-              de productos disponibles y una comunidad fiel que crece cada dia.
+              Hoy nos especializamos en Funko Pop! originales y elegimos cada referencia pensando en
+              lo que la comunidad colombiana quiere tener en su repisa.
             </p>
           </div>
         </section>
+      </div>
 
-        {/* Importacion desde USA */}
+      <section
+        aria-labelledby="importacion"
+        className="grain my-8 md:my-12 bg-[var(--color-stage)] text-[var(--color-stage-text)]"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 grid gap-6 md:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] md:items-end md:gap-16">
+          <h2 id="importacion" className="type-section">
+            Originales, siempre
+          </h2>
+          <p className="max-w-[52ch] text-lg leading-relaxed">
+            Cada figura viene de fabricantes y distribuidores oficiales, principalmente de Estados
+            Unidos. Así garantizamos su autenticidad: nunca vendemos réplicas ni productos sin
+            licencia.
+          </p>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4">
         <section
-          className="rounded-xl p-6 border"
-          style={{
-            backgroundColor: 'var(--color-bg-alt)',
-            borderColor: 'var(--color-border)',
-          }}
+          aria-labelledby="mision"
+          className="grid gap-6 py-12 md:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] md:gap-16 md:py-16"
         >
-          <h2
-            className="font-[family-name:var(--font-heading)] font-bold text-2xl mb-4"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            Importamos directamente desde USA
+          <h2 id="mision" className="type-section text-[var(--color-text)]">
+            Nuestra misión
           </h2>
-          <p style={{ color: 'var(--color-text-muted)' }}>
-            Todos nuestros productos son 100% originales e importados directamente desde Estados Unidos
-            y otros paises de origen. Trabajamos con distribuidores oficiales para garantizar la
-            autenticidad de cada articulo. Nunca vendemos replicas ni productos no licenciados.
+          <p className="max-w-[65ch] text-base leading-relaxed text-[var(--color-text)]">
+            Ser el puente entre la cultura pop internacional y los fans en Colombia: figuras
+            originales, atención cercana y envíos a todo el país.
           </p>
         </section>
 
-        {/* Nuestra mision */}
-        <section>
-          <h2
-            className="font-[family-name:var(--font-heading)] font-bold text-2xl mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
-            Nuestra mision
+        <section
+          aria-labelledby="valores"
+          className="grid gap-8 py-12 md:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] md:gap-16 md:py-16"
+        >
+          <h2 id="valores" className="type-section text-[var(--color-text)]">
+            Lo que nos importa
           </h2>
-          <p style={{ color: 'var(--color-text-muted)' }}>
-            Llevar alegria y nostalgia a cada rincon de Colombia a traves de productos originales
-            de calidad. Queremos ser el puente entre la cultura pop internacional y los fanaticos
-            colombianos, ofreciendo siempre los mejores precios, la mejor atencion y envio rapido
-            a todo el pais.
-          </p>
-        </section>
-
-        {/* Valores */}
-        <section>
-          <h2
-            className="font-[family-name:var(--font-heading)] font-bold text-2xl mb-6"
-            style={{ color: 'var(--color-text)' }}
-          >
-            Nuestros valores
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              {
-                title: 'Autenticidad',
-                desc: 'Solo vendemos productos 100% originales con garantia de autenticidad.',
-              },
-              {
-                title: 'Comunidad',
-                desc: 'Somos frikis como tu. Entendemos tu pasion y la compartimos.',
-              },
-              {
-                title: 'Servicio',
-                desc: 'Tu satisfaccion es nuestra prioridad, desde el primer clic hasta la entrega.',
-              },
-            ].map(({ title, desc }) => (
-              <div
-                key={title}
-                className="rounded-lg p-5 border"
-                style={{
-                  backgroundColor: 'var(--color-bg-card)',
-                  borderColor: 'var(--color-border)',
-                }}
-              >
-                <h3
-                  className="font-[family-name:var(--font-heading)] font-bold text-base mb-2"
-                  style={{ color: 'var(--color-secondary)' }}
-                >
-                  {title}
-                </h3>
-                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  {desc}
-                </p>
+          <dl className="flex flex-col gap-8">
+            {values.map(({ title, text }) => (
+              <div key={title}>
+                <dt className="text-xl font-semibold text-[var(--color-text)]">{title}</dt>
+                <dd className="mt-1 max-w-[60ch] text-base leading-relaxed text-[var(--color-text)]">
+                  {text}
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
         </section>
 
-        {/* CTA */}
-        <section className="text-center py-6">
-          <p className="mb-4" style={{ color: 'var(--color-text-muted)' }}>
-            ¿Quieres saber mas o tienes alguna pregunta?
+        <section className="mt-8 rounded-2xl bg-[var(--color-bg-alt)] p-6 md:p-12 md:flex md:items-center md:justify-between md:gap-10">
+          <p className="text-xl font-semibold text-[var(--color-text)]">
+            ¿Buscas una figura en particular?
           </p>
-          <Link
-            href="/contacto"
-            className="inline-block px-8 py-3 rounded-lg text-white font-semibold transition-colors"
-            style={{ backgroundColor: 'var(--color-primary)' }}
-          >
-            Contactanos
-          </Link>
+          <div className="mt-6 md:mt-0 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link
+              href="/productos"
+              className="inline-flex items-center min-h-11 px-6 rounded-full text-sm font-semibold bg-[var(--color-primary)] text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)] transition-colors"
+            >
+              Ver catálogo
+            </Link>
+            <Link
+              href="/contacto"
+              className="text-sm font-semibold text-[var(--color-primary-text)] underline underline-offset-4"
+            >
+              Escríbenos
+            </Link>
+          </div>
         </section>
       </div>
     </div>
