@@ -56,6 +56,21 @@ class TestAdminProductApi:
         resp = client.post("/api/v1/admin/products/", _form(deps), format="multipart")
         assert resp.status_code == 403
 
+    def test_category_defaults_to_the_only_one(self, admin_client, deps):
+        data = _form(deps)
+        del data["category_id"]
+        resp = admin_client.post("/api/v1/admin/products/", data, format="multipart")
+        assert resp.status_code == 201, resp.data
+        assert resp.data["category_id"] == str(deps[0].id)
+
+    def test_category_required_when_there_are_several(self, admin_client, deps):
+        Category.objects.create(name="Peluches")
+        data = _form(deps)
+        del data["category_id"]
+        resp = admin_client.post("/api/v1/admin/products/", data, format="multipart")
+        assert resp.status_code == 400
+        assert "category_id" in resp.data
+
     def test_creates_product_with_image(self, admin_client, deps):
         resp = admin_client.post(
             "/api/v1/admin/products/", {**_form(deps), "images": [_png()]}, format="multipart",

@@ -38,7 +38,7 @@ class AdminProductWriteSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True, default="")
     short_description = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), source="category",
+        queryset=Category.objects.all(), source="category", required=False,
         error_messages={"does_not_exist": "La categoria no existe."},
     )
     franchise_id = serializers.PrimaryKeyRelatedField(
@@ -92,6 +92,12 @@ class AdminProductWriteSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"compare_price": "El precio de comparacion debe ser mayor que el precio base."}
             )
+        if self.instance is None and "category" not in attrs:
+            # The store sells a single line (Funko Pop!), so the form may omit it.
+            categories = list(Category.objects.all()[:2])
+            if len(categories) != 1:
+                raise serializers.ValidationError({"category_id": "Selecciona una categoria."})
+            attrs["category"] = categories[0]
         on_sale = attrs.get("is_on_sale", getattr(self.instance, "is_on_sale", False))
         if not on_sale:
             attrs["sale_percentage"] = None
