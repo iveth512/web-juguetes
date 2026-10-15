@@ -44,9 +44,19 @@ body {
   --color-secondary-dark: #231256;
   --color-accent: #8CC63F;
   --color-text: #1A1A2E;
-  --color-text-muted: #6B7280;
+  --color-text-muted: #5B6170;
   --color-border: #E5E7EB;
-  --color-error: #EF4444;
+  --color-error: #DC2626;
+  /* Orange is too light for text on white (2.7:1); this darker step reaches 5:1. */
+  --color-primary-text: #B4500A;
+  /* Brand fills (orange, green) carry dark ink: white on them fails contrast. */
+  --color-on-primary: #1A1A2E;
+  --color-on-accent: #1A1A2E;
+  /* The studio stage: dark field used by the hero and the video showcase in both themes. */
+  --color-stage: #120A2A;
+  --color-stage-raised: #1D1245;
+  --color-stage-text: #F4F1FF;
+  --color-stage-muted: #B9B0DA;
 
   /* shadcn required variables */
   --background: #FFFFFF;
@@ -56,7 +66,7 @@ body {
   --popover: #FFFFFF;
   --popover-foreground: #1A1A2E;
   --primary: #F57C20;
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #1A1A2E;
   --secondary: #2D1B69;
   --secondary-foreground: #FFFFFF;
   --muted: #F8F8F8;
@@ -92,10 +102,17 @@ body {
   --color-secondary: #1A1045;
   --color-secondary-dark: #120D35;
   --color-accent: #8CC63F;
-  --color-text: #E5E5E5;
-  --color-text-muted: #9CA3AF;
+  --color-text: #ECECF2;
+  --color-text-muted: #A3A8B8;
   --color-border: #2D2D44;
-  --color-error: #EF4444;
+  --color-error: #F87171;
+  --color-primary-text: #F79A4F;
+  --color-on-primary: #1A1A2E;
+  --color-on-accent: #1A1A2E;
+  --color-stage: #0A0618;
+  --color-stage-raised: #1A1040;
+  --color-stage-text: #F4F1FF;
+  --color-stage-muted: #B9B0DA;
 
   /* shadcn required variables */
   --background: #0F0F1A;
@@ -105,7 +122,7 @@ body {
   --popover: #1E1E32;
   --popover-foreground: #E5E5E5;
   --primary: #F57C20;
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #1A1A2E;
   --secondary: #1A1045;
   --secondary-foreground: #E5E5E5;
   --muted: #1A1A2E;
@@ -146,8 +163,16 @@ body {
   --color-text-muted: var(--color-text-muted);
   --color-border: var(--color-border);
   --color-error: var(--color-error);
+  --color-primary-text: var(--color-primary-text);
+  --color-on-primary: var(--color-on-primary);
+  --color-on-accent: var(--color-on-accent);
+  --color-stage: var(--color-stage);
+  --color-stage-raised: var(--color-stage-raised);
+  --color-stage-text: var(--color-stage-text);
+  --color-stage-muted: var(--color-stage-muted);
   --font-sans: var(--font-body);
-  --font-heading: var(--font-heading);
+  --font-heading: var(--font-body);
+  --font-display: var(--font-display);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -195,6 +220,74 @@ body {
     font-family: var(--font-body), system-ui, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading), system-ui, sans-serif;
+    font-family: var(--font-body), system-ui, sans-serif;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  a {
+    text-underline-offset: 0.2em;
+  }
+}
+
+/*
+ * Type scale. Anton has a single weight, so it is reserved for large uppercase display
+ * roles; everything else (prices and product names included) is set in Bricolage Grotesque.
+ */
+@layer components {
+  .type-hero,
+  .type-page,
+  .type-section {
+    font-family: var(--font-display), Impact, sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    text-wrap: balance;
+  }
+  .type-hero {
+    font-size: clamp(3.25rem, 7.2vw, 6.5rem);
+    line-height: 0.92;
+  }
+  .type-page {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 0.95;
+  }
+  .type-section {
+    font-size: clamp(2rem, 3.4vw, 3rem);
+    line-height: 1;
+  }
+  /* Re-points the surface tokens so shared components (product cards) read on dark fields. */
+  .on-dark {
+    --color-text: var(--color-stage-text);
+    --color-text-muted: var(--color-stage-muted);
+    --color-bg: var(--color-stage);
+    --color-bg-alt: var(--color-stage-raised);
+    --color-primary-text: #FFB27A;
+    color: var(--color-stage-text);
+  }
+  .type-lead {
+    font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
+    line-height: 1.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
