@@ -7,7 +7,7 @@ import { authConfirmPasswordReset } from '@/lib/api';
 import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
 
 const inputClassName =
-  'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]';
+  'min-h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]';
 
 export function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -23,7 +23,7 @@ export function ResetPasswordContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password1 !== password2) {
-      setError('Las contrasenas no coinciden.');
+      setError('Las contraseñas no coinciden.');
       return;
     }
     setLoading(true);
@@ -35,7 +35,7 @@ export function ResetPasswordContent() {
       const message = err instanceof Error ? err.message : '';
       setError(
         !message || message.includes('API error') || message.toLowerCase().includes('invalid')
-          ? 'El enlace no es valido o ya expiro. Solicita uno nuevo.'
+          ? 'El enlace no es válido o ya expiró. Solicita uno nuevo.'
           : message
       );
     } finally {
@@ -45,9 +45,9 @@ export function ResetPasswordContent() {
 
   if (!uid || !token) {
     return (
-      <p className="text-sm text-center text-[var(--color-text-muted)]">
-        El enlace esta incompleto.{' '}
-        <Link href="/recuperar-contrasena" className="text-[var(--color-primary)] hover:underline">
+      <p className="text-base text-[var(--color-text)]">
+        El enlace está incompleto.{' '}
+        <Link href="/recuperar-contrasena" className="font-semibold text-[var(--color-primary-text)] underline underline-offset-4">
           Solicita uno nuevo
         </Link>
         .
@@ -57,13 +57,15 @@ export function ResetPasswordContent() {
 
   if (done) {
     return (
-      <div className="text-center space-y-4">
-        <p className="text-sm text-[var(--color-text-muted)]">Tu contrasena fue actualizada.</p>
+      <div className="space-y-6">
+        <p className="text-base text-[var(--color-text)]" role="status">
+          Listo, tu contraseña quedó actualizada. Ya puedes iniciar sesión con ella.
+        </p>
         <Link
           href="/login"
-          className="inline-block rounded-lg bg-[var(--color-primary)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-hover)]"
+          className="inline-flex min-h-12 items-center rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
         >
-          Iniciar sesion
+          Iniciar sesión
         </Link>
       </div>
     );
@@ -72,14 +74,17 @@ export function ResetPasswordContent() {
   return (
     <>
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-[var(--color-error)] bg-[var(--color-bg-card)] p-3 text-sm text-[var(--color-error)]"
+        >
           {error}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="password1" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-            Nueva contrasena
+            Nueva contraseña
           </label>
           <input
             id="password1"
@@ -94,7 +99,7 @@ export function ResetPasswordContent() {
         </div>
         <div>
           <label htmlFor="password2" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-            Confirmar contrasena
+            Confirmar contraseña
           </label>
           <input
             id="password2"
@@ -109,9 +114,9 @@ export function ResetPasswordContent() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="min-h-12 w-full rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? 'Guardando...' : 'Guardar contrasena'}
+          {loading ? 'Guardando…' : 'Guardar contraseña'}
         </button>
       </form>
     </>

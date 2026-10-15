@@ -28,7 +28,7 @@ function presetRange(preset: string): DateRange {
 
 const PRESETS = [
   { key: '7', label: '7 dias' },
-  { key: '30', label: '30 dias' },
+  { key: '30', label: '30 días' },
   { key: '90', label: '90 dias' },
   { key: 'mes', label: 'Este mes' },
 ];

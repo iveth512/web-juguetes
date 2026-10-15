@@ -2,83 +2,66 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Pagina no encontrada — Juguetes para Frikis',
-  description: 'La pagina que buscas no existe o fue movida.',
+  title: 'Página no encontrada — Juguetes para Frikis',
+  description: 'La página que buscas no existe o cambió de dirección.',
 };
 
 const SUGGESTED_LINKS = [
-  { href: '/productos?franchise=demon-slayer', label: 'Demon Slayer' },
-  { href: '/productos?franchise=naruto-shippuden', label: 'Naruto Shippuden' },
-  { href: '/productos?franchise=one-piece', label: 'One Piece' },
   { href: '/productos?franchise=marvel', label: 'Marvel' },
-  { href: '/productos?franchise=pokemon', label: 'Pokémon' },
+  { href: '/productos?franchise=star-wars', label: 'Star Wars' },
+  { href: '/productos?franchise=el-senor-de-los-anillos', label: 'El Señor de los Anillos' },
+  { href: '/productos?franchise=my-hero-academia', label: 'My Hero Academia' },
+  { href: '/productos?franchise=dragon-ball', label: 'Dragon Ball' },
   { href: '/ofertas', label: 'Ofertas de la semana' },
 ];
 
 export default function NotFound() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4 py-16">
-      <div className="max-w-lg w-full text-center">
-        {/* Large 404 */}
-        <p
-          className="text-[120px] md:text-[160px] font-[family-name:var(--font-heading)] font-bold leading-none"
-          style={{ color: 'var(--color-primary)' }}
-        >
+    <div className="mx-auto w-full max-w-7xl px-4 py-16 md:py-24">
+      <div className="grid gap-10 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-16">
+        <p aria-hidden="true" className="type-hero text-[clamp(7rem,18vw,12rem)] text-[var(--color-primary)]">
           404
         </p>
-
-        {/* Title */}
-        <h1
-          className="font-[family-name:var(--font-heading)] font-bold text-2xl md:text-3xl mt-2 mb-3"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Pagina no encontrada
-        </h1>
-
-        {/* Subtitle */}
-        <p
-          className="text-base mb-8"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          La pagina que buscas no existe o fue movida. Quizas puedas encontrar lo que buscas aqui abajo.
-        </p>
-
-        {/* CTA */}
-        <Link
-          href="/"
-          className="inline-block px-8 py-3 rounded-lg text-white font-semibold text-base transition-colors"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-          onMouseEnter={undefined}
-        >
-          Volver al inicio
-        </Link>
-
-        {/* Franchise suggestions */}
-        <div className="mt-12">
-          <p
-            className="text-sm font-semibold uppercase tracking-wider mb-4"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            O explora nuestras franquicias
+        <div className="max-w-[52ch]">
+          <h1 className="type-page text-[var(--color-text)]">Esta figura no está en la repisa</h1>
+          <p className="mt-4 text-base leading-relaxed text-[var(--color-text)]">
+            La página que buscas no existe o cambió de dirección. Revisa el enlace o sigue
+            buscando en el catálogo.
           </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {SUGGESTED_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 rounded-full text-sm border transition-colors"
-                style={{
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text)',
-                  backgroundColor: 'var(--color-bg-card)',
-                }}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link
+              href="/productos"
+              className="inline-flex items-center min-h-11 px-6 rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] text-base font-semibold hover:bg-[var(--color-primary-hover)] transition-colors"
+            >
+              Ver catálogo
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center min-h-11 text-base font-semibold text-[var(--color-primary-text)] underline underline-offset-4"
+            >
+              Volver al inicio
+            </Link>
           </div>
         </div>
       </div>
+
+      <section aria-labelledby="sugerencias" className="mt-16 md:mt-24">
+        <h2 id="sugerencias" className="text-xl font-semibold text-[var(--color-text)]">
+          O empieza por una franquicia
+        </h2>
+        <ul className="mt-4 flex flex-wrap gap-2">
+          {SUGGESTED_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="inline-flex items-center min-h-11 px-5 rounded-full bg-[var(--color-bg-alt)] text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-border)] transition-colors"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
