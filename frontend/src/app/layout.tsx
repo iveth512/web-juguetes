@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Bricolage_Grotesque, Yellowtail } from "next/font/google";
+import { Anton, Bricolage_Grotesque, Damion } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
@@ -13,7 +13,7 @@ const anton = Anton({
   display: "swap",
 });
 
-const yellowtail = Yellowtail({
+const damion = Damion({
   variable: "--font-sticker",
   subsets: ["latin"],
   weight: "400",
@@ -45,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${anton.variable} ${bricolage.variable} ${yellowtail.variable} h-full antialiased`}
+      className={`${anton.variable} ${bricolage.variable} ${damion.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
