@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The logo's script (Steady, Artimasa) is licensed for print only, so it is never shipped:
+ * it is used when installed on the viewer's machine, otherwise Yellowtail takes over.
+ */
+@font-face {
+  font-family: "Steady Local";
+  src: local("Steady"), local("Steady Regular"), local("Steady-Regular");
+  font-display: swap;
+}
+
 /* Prevent horizontal overflow on mobile — only on body to preserve sticky on iOS */
 body {
   overflow-x: clip;
@@ -330,7 +340,7 @@ body {
     justify-content: center;
     text-align: center;
     line-height: 1;
-    font-family: var(--font-sticker), cursive;
+    font-family: "Steady Local", var(--font-sticker), cursive;
     font-weight: 400;
     color: var(--sticker-ink, var(--color-on-primary));
     background: var(--sticker-bg, var(--color-primary));
