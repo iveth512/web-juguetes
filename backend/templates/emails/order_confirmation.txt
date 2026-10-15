@@ -1,0 +1,22 @@
+JuguetesParaFrikis — Pedido Confirmado
+
+Hola {{ order.shipping_name }},
+
+Tu pedido #{{ order_id_short }} ha sido confirmado.
+
+{% for item in items %}
+- {{ item.product.name }} x{{ item.quantity }} — ${{ item.price|floatformat:0 }}
+{% endfor %}
+
+Subtotal: ${{ order.subtotal|floatformat:0 }}
+{% if order.discount > 0 %}Descuento: -${{ order.discount|floatformat:0 }}{% endif %}
+Envio: {% if order.shipping_cost > 0 %}${{ order.shipping_cost|floatformat:0 }}{% else %}Gratis{% endif %}
+Total: ${{ order.total|floatformat:0 }}
+
+Direccion de envio:
+{{ order.shipping_name }}
+{{ order.shipping_address }}
+{{ order.shipping_city }}, {{ order.shipping_department }}
+Tel: {{ order.shipping_phone }}
+
+Gracias por tu compra!

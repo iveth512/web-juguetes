@@ -1,0 +1,21 @@
+# Entorno
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/media/
+backend/staticfiles/
+
+# Node
+node_modules/
+.next/
+frontend/tsconfig.tsbuildinfo
+
+# Sistema
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

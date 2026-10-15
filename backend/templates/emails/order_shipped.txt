@@ -1,0 +1,14 @@
+JuguetesParaFrikis — Pedido Enviado
+
+Hola {{ order.shipping_name }},
+
+Tu pedido #{{ order_id_short }} ha sido enviado y esta en camino.
+{% if order.tracking_number %}
+Transportadora: {{ order.shipping_carrier|default:"-" }}
+Numero de guia: {{ order.tracking_number }}
+{% endif %}
+Direccion de entrega:
+{{ order.shipping_address }}
+{{ order.shipping_city }}, {{ order.shipping_department }}
+
+Gracias por comprar en JuguetesParaFrikis!

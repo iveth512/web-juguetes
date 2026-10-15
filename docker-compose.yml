@@ -1,0 +1,94 @@
+# Entorno local de demostración. `docker compose up --build` y abrir
+# http://localhost:3000. Ningún archivo .env es necesario para arrancar.
+name: juguetesparafrikis
+
+x-backend-env: &backend-env
+  DJANGO_SETTINGS_MODULE: config.settings.development
+  DJANGO_SECRET_KEY: solo-para-desarrollo-local-no-usar-en-produccion
+  DJANGO_DEBUG: "True"
+  DB_PASSWORD: juguetes_local
+  DB_HOST: db
+  REDIS_URL: redis://redis:6379/1
+  ALLOWED_HOSTS: localhost,127.0.0.1,backend
+  CORS_ALLOWED_ORIGINS: http://localhost:3000
+  FRONTEND_URL: http://localhost:3000
+  BACKEND_URL: http://localhost:8000
+  MEDIA_URL: http://localhost:8000/media/
+  PAYMENTS_PROVIDER: simulado
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: juguetes_db
+      POSTGRES_USER: juguetes_user
+      POSTGRES_PASSWORD: juguetes_local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U juguetes_user -d juguetes_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py bootstrap_demo &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment: *backend-env
+    # Opcional: backend/.env para sobrescribir valores (p. ej. llaves de Bold).
+    env_file:
+      - path: ./backend/.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Cancela pedidos sin pagar tras 60 minutos y devuelve su stock.
+  worker:
+    build: ./backend
+    command: sh -c "sleep 30; while true; do python manage.py process_pending_orders; sleep 300; done"
+    volumes:
+      - ./backend:/app
+    environment: *backend-env
+    env_file:
+      - path: ./backend/.env
+        required: false
+    depends_on:
+      - backend
+
+  frontend:
+    build: ./frontend
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      INTERNAL_API_URL: http://backend:8000/api/v1
+      NEXT_PUBLIC_PAYMENT_PROVIDER: simulado
+      WATCHPACK_POLLING: "true"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
