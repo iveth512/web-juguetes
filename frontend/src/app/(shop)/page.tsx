@@ -16,9 +16,9 @@ export default function HomePage() {
     <>
       <HeroBanner />
       <NewProductsSection />
+      <OffersSection />
       <FeaturedProductsSection />
       <VideoShowcase />
-      <OffersSection />
       <TrustBadges />
     </>
   );

@@ -1,55 +1,44 @@
-import { cn } from '@/lib/utils';
+import { BadgeCheck, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
 
-const badges = [
+const promises = [
   {
-    icon: '📦',
-    title: 'Envio Seguro',
-    description: 'A todo Colombia',
+    icon: BadgeCheck,
+    title: '100% originales',
+    description: 'Importamos directamente de Estados Unidos. Nada de réplicas.',
   },
   {
-    icon: '🔄',
-    title: 'Devoluciones 30 dias',
-    description: 'Sin preguntas',
+    icon: Truck,
+    title: 'Envío a toda Colombia',
+    description: 'Gratis en compras desde $250.000.',
   },
   {
-    icon: '🔒',
-    title: 'Pago 100% Seguro',
-    description: 'Bold + PSE',
+    icon: ShieldCheck,
+    title: 'Pago seguro con Bold',
+    description: 'Paga con tarjeta o PSE en la pasarela de Bold.',
   },
   {
-    icon: '✅',
-    title: '100% Originales',
-    description: 'Importacion directa USA',
+    icon: RotateCcw,
+    title: '30 días para devolver',
+    description: 'Si la caja llega sin abrir y en su empaque original.',
   },
 ];
 
 export function TrustBadges() {
   return (
-    <section className="py-12 bg-[var(--color-bg)]">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {badges.map((badge) => (
-            <div
-              key={badge.title}
-              className={cn(
-                'flex flex-col items-center text-center p-5 rounded-lg',
-                'border border-[var(--color-border)] bg-[var(--color-bg-card)]',
-                'transition-colors duration-200',
-                'hover:border-[var(--color-primary)]'
-              )}
-            >
-              <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-2xl mb-3">
-                {badge.icon}
+    <section className="bg-[var(--color-bg)] py-16 md:py-24">
+      <div className="mx-auto max-w-7xl px-4">
+        <h2 className="type-section max-w-2xl text-[var(--color-text)]">Comprar aquí es sencillo</h2>
+        <ul className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+          {promises.map(({ icon: Icon, title, description }) => (
+            <li key={title} className="flex gap-4">
+              <Icon className="mt-0.5 h-7 w-7 shrink-0 text-[var(--color-primary-text)]" strokeWidth={1.75} aria-hidden="true" />
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--color-text)]">{title}</h3>
+                <p className="mt-1 text-base leading-relaxed text-[var(--color-text-muted)]">{description}</p>
               </div>
-              <h3 className="font-heading text-[13px] font-bold text-[var(--color-text)]">
-                {badge.title}
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                {badge.description}
-              </p>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

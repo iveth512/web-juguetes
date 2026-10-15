@@ -5,41 +5,27 @@ import { useOffersCountdown } from '@/hooks/useOffersCountdown';
 import { useOnSaleProducts } from '@/hooks/useProducts';
 import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCard';
 
-function formatCountdown(diff: number) {
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0 };
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  return { days, hours, minutes };
+function describeRemaining(ms: number) {
+  const totalMinutes = Math.floor(ms / 60_000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days} ${days === 1 ? 'día' : 'días'} y ${hours} h`;
+  if (hours > 0) return `${hours} h y ${minutes} min`;
+  return `${minutes} min`;
 }
 
-function CountdownTimer() {
+function OffersDeadline() {
   const remaining = useOffersCountdown(60_000);
-
-  if (remaining === null) {
-    return <div className="flex gap-3" />;
-  }
-
-  const timeLeft = formatCountdown(remaining);
-
   return (
-    <div className="flex gap-3">
-      {[
-        { value: timeLeft.days, label: 'días' },
-        { value: timeLeft.hours, label: 'hrs' },
-        { value: timeLeft.minutes, label: 'min' },
-      ].map((unit) => (
-        <div
-          key={unit.label}
-          className="flex flex-col items-center bg-white/10 rounded-lg px-3 py-2 min-w-[52px]"
-        >
-          <span className="font-heading text-xl font-bold text-white">
-            {String(unit.value).padStart(2, '0')}
-          </span>
-          <span className="text-[10px] text-white/70 uppercase">{unit.label}</span>
-        </div>
-      ))}
-    </div>
+    <p className="mt-3 text-base text-[var(--color-stage-muted)]" aria-live="off">
+      Cambian cada lunes.{' '}
+      {remaining !== null && (
+        <span className="font-semibold text-[var(--color-stage-text)]">
+          Quedan {describeRemaining(remaining)}.
+        </span>
+      )}
+    </p>
   );
 }
 
@@ -47,28 +33,28 @@ export function OffersSection() {
   const { data, isLoading } = useOnSaleProducts();
   const products = data?.results?.slice(0, 4) ?? [];
 
+  if (!isLoading && products.length === 0) return null;
+
   return (
-    <section className="py-12 bg-[var(--color-secondary)]">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-          <h2 className="font-heading text-[22px] font-bold text-white">
-            <Link href="/ofertas" className="hover:text-[var(--color-primary)] transition-colors">
-              Ofertas de la semana
-            </Link>
-          </h2>
-          <CountdownTimer />
+    <section className="on-dark bg-[var(--color-secondary)] py-16 md:py-24 [--color-bg-alt:#3B2A80] [--color-bg:var(--color-secondary)] dark:[--color-bg-alt:var(--color-stage-raised)]">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
+          <div className="max-w-xl">
+            <h2 className="type-section">Ofertas de la semana</h2>
+            <OffersDeadline />
+          </div>
+          <Link
+            href="/ofertas"
+            className="inline-flex min-h-11 items-center text-base font-semibold underline decoration-[var(--color-accent)] decoration-2 underline-offset-[6px] hover:text-[var(--color-accent)]"
+          >
+            Ver todas las ofertas
+          </Link>
         </div>
 
-        {/* Product grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">
           {isLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <ProductCardSkeleton key={i} />
-              ))
-            : products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+            ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
+            : products.map((product) => <ProductCard key={product.id} product={product} />)}
         </div>
       </div>
     </section>

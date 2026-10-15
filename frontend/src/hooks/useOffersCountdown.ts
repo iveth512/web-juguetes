@@ -2,32 +2,27 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
-const STORAGE_KEY = 'offers-end-date';
-const OFFER_DAYS = 7;
+// Colombia has no daylight saving time, so Bogotá is always UTC-5.
+const BOGOTA_OFFSET_HOURS = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-let fallbackEndTime: number | null = null;
-
-function weekFromNow(): number {
-  const end = new Date();
-  end.setDate(end.getDate() + OFFER_DAYS);
-  return end.getTime();
-}
-
-// The end date lives in sessionStorage so the countdown survives navigation within the session.
-function readEndTime(): number {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored) return new Date(stored).getTime();
-    const end = weekFromNow();
-    sessionStorage.setItem(STORAGE_KEY, new Date(end).toISOString());
-    return end;
-  } catch {
-    fallbackEndTime ??= weekFromNow();
-    return fallbackEndTime;
-  }
+/**
+ * Weekly offers rotate on Monday 00:00 in Bogotá. Every visitor sees the same deadline,
+ * unlike a per-session timer, which would invent urgency.
+ */
+export function nextOffersRotation(now: number = Date.now()): number {
+  const bogota = new Date(now - BOGOTA_OFFSET_HOURS * 60 * 60 * 1000);
+  const daysUntilMonday = ((8 - bogota.getUTCDay()) % 7) || 7;
+  const mondayMidnightBogota = Date.UTC(
+    bogota.getUTCFullYear(),
+    bogota.getUTCMonth(),
+    bogota.getUTCDate() + daysUntilMonday,
+  );
+  return mondayMidnightBogota + BOGOTA_OFFSET_HOURS * 60 * 60 * 1000;
 }
 
 const subscribe = () => () => {};
+const readEndTime = () => nextOffersRotation();
 
 /** Milliseconds left in the weekly offers, or null during SSR/hydration. */
 export function useOffersCountdown(tickMs: number): number | null {
@@ -39,5 +34,8 @@ export function useOffersCountdown(tickMs: number): number | null {
     return () => clearInterval(interval);
   }, [tickMs]);
 
-  return endTime === null ? null : Math.max(0, endTime - now);
+  if (endTime === null) return null;
+  // Past the rotation without a reload: roll over to the following week.
+  const end = now >= endTime ? endTime + 7 * DAY_MS : endTime;
+  return Math.max(0, end - now);
 }
