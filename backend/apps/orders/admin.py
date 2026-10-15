@@ -45,7 +45,7 @@ class OrderAdmin(admin.ModelAdmin):
         (None, {"fields": ("id", "user", "status", "created_at", "updated_at")}),
         ("Atencion", {"fields": ("requires_attention", "attention_reason")}),
         ("Valores", {"fields": ("subtotal", "discount", "coupon", "shipping_cost", "total", "paid_at")}),
-        ("Envio", {"fields": (
+        ("Envío", {"fields": (
             "shipping_name", "shipping_phone", "shipping_address", "shipping_city",
             "shipping_department", "shipping_carrier", "tracking_number", "shipped_at", "notes",
         )}),

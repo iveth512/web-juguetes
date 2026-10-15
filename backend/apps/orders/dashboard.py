@@ -21,6 +21,7 @@ from rest_framework.views import APIView
 from apps.products.models import Product
 from core.pagination import StandardPagination
 
+from .emails import send_order_shipped_email
 from .models import Order, OrderItem
 from .services import to_pesos
 
@@ -47,7 +48,7 @@ def parse_range(params):
     if start > end:
         raise RangeError("La fecha inicial no puede ser posterior a la final.")
     if (end - start).days + 1 > MAX_RANGE_DAYS:
-        raise RangeError(f"El rango maximo es de {MAX_RANGE_DAYS} dias.")
+        raise RangeError(f"El rango máximo es de {MAX_RANGE_DAYS} días.")
     return start, end
 
 
@@ -234,7 +235,7 @@ class AdminOrderHistoryView(APIView):
                 status=estado, created_at__gte=lower, created_at__lt=upper,
             )
         else:
-            return Response({"detail": "Estado no valido."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Estado no válido."}, status=status.HTTP_400_BAD_REQUEST)
 
         q = params.get("q", "").strip()
         if q:
@@ -291,6 +292,7 @@ class AdminOrderDetailView(APIView):
                 order.status = new_status
                 if new_status == Order.Status.SHIPPED:
                     order.shipped_at = timezone.now()
+                    transaction.on_commit(lambda: send_order_shipped_email(order))
             if ("tracking_number" in data or "shipping_carrier" in data) and order.status not in self.NEXT_STATUS.values():
                 return Response(
                     {"tracking_number": ["La guía solo se registra en pedidos enviados o entregados."]},

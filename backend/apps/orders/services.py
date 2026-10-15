@@ -51,7 +51,7 @@ class Quote:
 def build_quote(items, city, coupon_code="", lock=False):
     """Price a cart. With lock=True, rows are locked for update (use inside atomic)."""
     if not items:
-        raise CheckoutError("El carrito esta vacio.")
+        raise CheckoutError("El carrito está vacío.")
 
     product_ids = {i["product_id"] for i in items}
     variant_ids = {i["variant_id"] for i in items if i.get("variant_id")}
@@ -69,14 +69,14 @@ def build_quote(items, city, coupon_code="", lock=False):
     for item in items:
         product = products.get(item["product_id"])
         if product is None:
-            raise CheckoutError("Uno de los productos ya no esta disponible.")
+            raise CheckoutError("Uno de los productos ya no está disponible.")
 
         variant = None
         variant_id = item.get("variant_id")
         if variant_id:
             variant = variants.get(variant_id)
             if variant is None or variant.product_id != product.id:
-                raise CheckoutError(f"{product.name}: la variante ya no esta disponible.")
+                raise CheckoutError(f"{product.name}: la variante ya no está disponible.")
         elif product.has_variants:
             raise CheckoutError(f"{product.name}: selecciona una variante.")
 
@@ -95,7 +95,7 @@ def build_quote(items, city, coupon_code="", lock=False):
             coupons = coupons.select_for_update()
         coupon = coupons.first()
         if coupon is None:
-            raise CheckoutError("Cupon no valido.")
+            raise CheckoutError("Cupón no válido.")
         valid, message = coupon.is_valid(subtotal=quote.subtotal)
         if not valid:
             raise CheckoutError(message)
@@ -106,7 +106,7 @@ def build_quote(items, city, coupon_code="", lock=False):
     quote.total = quote.subtotal - quote.discount + quote.shipping_cost
 
     if quote.total < MIN_ORDER_TOTAL:
-        raise CheckoutError(f"El total minimo de compra es ${MIN_ORDER_TOTAL:,.0f}.")
+        raise CheckoutError(f"El total mínimo de compra es ${MIN_ORDER_TOTAL:,.0f}.".replace(",", "."))
     return quote
 
 

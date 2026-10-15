@@ -174,7 +174,7 @@ class TestMinimumTotal:
         product = _create_product(base_price=Decimal("500"))
         resp = _client(user).post("/api/v1/checkout/", _checkout_payload(product), format="json")
         assert resp.status_code == 400
-        assert "minimo" in resp.data["detail"]
+        assert "mínimo" in resp.data["detail"]
 
 
 @pytest.mark.django_db

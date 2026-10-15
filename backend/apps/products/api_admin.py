@@ -40,7 +40,7 @@ class AdminProductWriteSerializer(serializers.Serializer):
     short_description = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), source="category", required=False,
-        error_messages={"does_not_exist": "La categoria no existe."},
+        error_messages={"does_not_exist": "La categoría no existe."},
     )
     franchise_id = serializers.PrimaryKeyRelatedField(
         queryset=Franchise.objects.all(), source="franchise",
@@ -91,13 +91,13 @@ class AdminProductWriteSerializer(serializers.Serializer):
         compare = attrs.get("compare_price", getattr(self.instance, "compare_price", None))
         if compare is not None and base is not None and compare <= base:
             raise serializers.ValidationError(
-                {"compare_price": "El precio de comparacion debe ser mayor que el precio base."}
+                {"compare_price": "El precio de comparación debe ser mayor que el precio base."}
             )
         if self.instance is None and "category" not in attrs:
             # The store sells a single line (Funko Pop!), so the form may omit it.
             categories = list(Category.objects.all()[:2])
             if len(categories) != 1:
-                raise serializers.ValidationError({"category_id": "Selecciona una categoria."})
+                raise serializers.ValidationError({"category_id": "Selecciona una categoría."})
             attrs["category"] = categories[0]
         on_sale = attrs.get("is_on_sale", getattr(self.instance, "is_on_sale", False))
         if not on_sale:
@@ -142,7 +142,7 @@ def _admin_queryset():
 
 def _validate_images(files):
     if len(files) > MAX_IMAGES:
-        return f"Maximo {MAX_IMAGES} imagenes."
+        return f"Máximo {MAX_IMAGES} imágenes."
     for f in files:
         if f.size > MAX_IMAGE_BYTES:
             return f"{f.name}: supera 5 MB."
@@ -154,7 +154,7 @@ def _validate_images(files):
                 fmt = img.format
                 img.verify()
         except Exception:
-            return f"{f.name}: no es una imagen valida."
+            return f"{f.name}: no es una imagen válida."
         finally:
             f.seek(0)
         if fmt not in ALLOWED_IMAGE_FORMATS:
@@ -227,7 +227,7 @@ class AdminProductListCreate(APIView):
         except Exception:
             logger.exception("Admin product creation failed")
             return Response(
-                {"detail": "No se pudo crear el producto. Revisa los datos e imagenes."},
+                {"detail": "No se pudo crear el producto. Revisa los datos e imágenes."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -269,7 +269,7 @@ class AdminProductDetail(APIView):
 
         kept = product.images.exclude(pk__in=remove_ids).count()
         if kept + len(new_images) > MAX_IMAGES:
-            return Response({"detail": f"Maximo {MAX_IMAGES} imagenes."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": f"Máximo {MAX_IMAGES} imágenes."}, status=status.HTTP_400_BAD_REQUEST)
         image_error = _validate_images(new_images)
         if image_error:
             return Response({"detail": image_error}, status=status.HTTP_400_BAD_REQUEST)
@@ -292,7 +292,7 @@ class AdminProductDetail(APIView):
         except Exception:
             logger.exception("Admin product update failed")
             return Response(
-                {"detail": "No se pudo actualizar el producto. Revisa los datos e imagenes."},
+                {"detail": "No se pudo actualizar el producto. Revisa los datos e imágenes."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -307,7 +307,7 @@ class AdminProductDetail(APIView):
             product.is_active = False
             product.save(update_fields=["is_active", "updated_at"])
             return Response(
-                {"detail": "El producto tiene pedidos; se desactivo en lugar de eliminarse.", "deactivated": True},
+                {"detail": "El producto tiene pedidos; se desactivó en lugar de eliminarse.", "deactivated": True},
                 status=status.HTTP_200_OK,
             )
         product.delete()

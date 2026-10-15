@@ -34,7 +34,7 @@ class CouponValidateView(APIView):
             coupon = Coupon.objects.get(code=code)
         except Coupon.DoesNotExist:
             return Response(
-                {"detail": "Cupon no valido"},
+                {"detail": "Cupón no válido"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

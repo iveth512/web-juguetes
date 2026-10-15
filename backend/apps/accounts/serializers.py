@@ -31,7 +31,7 @@ class RegisterSerializer(BaseRegisterSerializer):
         # unique constraint then fails with a 500; answer clearly instead.
         if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError(
-                "Ya existe una cuenta con este correo. Inicia sesion o recupera tu contrasena."
+                "Ya existe una cuenta con este correo. Inicia sesión o recupera tu contraseña."
             )
         return email.lower()
 

@@ -33,7 +33,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
         if Review.objects.filter(user=user, product_id=product_id).exists():
             raise serializers.ValidationError(
-                "Ya dejaste una resena para este producto"
+                "Ya dejaste una reseña para este producto"
             )
 
         return attrs

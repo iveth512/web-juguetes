@@ -35,7 +35,7 @@ class BoldPaymentInitView(APIView):
     def post(self, request, pk):
         if not bold.is_configured():
             return Response(
-                {"detail": "Los pagos no estan disponibles en este momento."},
+                {"detail": "Los pagos no están disponibles en este momento."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
@@ -44,7 +44,7 @@ class BoldPaymentInitView(APIView):
             return Response({"detail": "Pedido no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         if order.status != Order.Status.PENDING:
             return Response(
-                {"detail": "Este pedido ya no esta pendiente de pago."},
+                {"detail": "Este pedido ya no está pendiente de pago."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -52,7 +52,7 @@ class BoldPaymentInitView(APIView):
         if expires_at <= timezone.now():
             release_order(order, reason="expirado al intentar pagar")
             return Response(
-                {"detail": "El pedido expiro. Vuelve a agregar los productos al carrito."},
+                {"detail": "El pedido expiró. Vuelve a agregar los productos al carrito."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -167,13 +167,13 @@ class PaymentInitView(BoldPaymentInitView):
             return Response({"detail": "Pedido no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         if order.status != Order.Status.PENDING:
             return Response(
-                {"detail": "Este pedido ya no esta pendiente de pago."},
+                {"detail": "Este pedido ya no está pendiente de pago."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if order_expires_at(order) <= timezone.now():
             release_order(order, reason="expirado al intentar pagar")
             return Response(
-                {"detail": "El pedido expiro. Vuelve a agregar los productos al carrito."},
+                {"detail": "El pedido expiró. Vuelve a agregar los productos al carrito."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

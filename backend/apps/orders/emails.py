@@ -46,7 +46,7 @@ def send_order_confirmation_email(order):
         'order_id_short': order.short_id,
     }
     _dispatch(
-        f"JuguetesParaFrikis — Pedido #{order.short_id} confirmado",
+        f"Juguetes para Frikis — Pedido #{order.short_id} confirmado",
         "order_confirmation", context, order.user.email,
     )
 
@@ -58,6 +58,6 @@ def send_order_shipped_email(order):
         'order_id_short': order.short_id,
     }
     _dispatch(
-        f"JuguetesParaFrikis — Tu pedido #{order.short_id} fue enviado",
+        f"Juguetes para Frikis — Tu pedido #{order.short_id} fue enviado",
         "order_shipped", context, order.user.email,
     )

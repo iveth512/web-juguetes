@@ -3,13 +3,13 @@
 <head><meta charset="utf-8"></head>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1A1A2E;">
   <div style="text-align: center; padding: 20px; background-color: #2D1B69; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">JuguetesParaFrikis</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">Juguetes para Frikis</h1>
   </div>
 
   <div style="padding: 30px; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 8px 8px;">
-    <h2 style="color: #F57C20;">Pedido confirmado!</h2>
+    <h2 style="color: #F57C20;">¡Pedido confirmado!</h2>
     <p>Hola {{ order.shipping_name }},</p>
-    <p>Tu pedido <strong>#{{ order_id_short }}</strong> ha sido confirmado. Aqui tienes el resumen:</p>
+    <p>Tu pedido <strong>#{{ order_id_short }}</strong> ha sido confirmado. Aquí tienes el resumen:</p>
 
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
       <thead>
@@ -35,12 +35,12 @@
       {% if order.discount > 0 %}
       <p style="color: #8CC63F;">Descuento: -${{ order.discount|floatformat:0 }}</p>
       {% endif %}
-      <p>Envio: {% if order.shipping_cost > 0 %}${{ order.shipping_cost|floatformat:0 }}{% else %}<span style="color: #8CC63F;">Gratis!</span>{% endif %}</p>
+      <p>Envío: {% if order.shipping_cost > 0 %}${{ order.shipping_cost|floatformat:0 }}{% else %}<span style="color: #8CC63F;">¡Gratis!</span>{% endif %}</p>
       <p style="font-size: 18px; color: #F57C20;"><strong>Total: ${{ order.total|floatformat:0 }}</strong></p>
     </div>
 
     <div style="margin-top: 20px; padding: 15px; background-color: #F8F8F8; border-radius: 8px;">
-      <h3 style="margin-top: 0;">Direccion de envio</h3>
+      <h3 style="margin-top: 0;">Dirección de envío</h3>
       <p style="margin: 5px 0;">{{ order.shipping_name }}</p>
       <p style="margin: 5px 0;">{{ order.shipping_address }}</p>
       <p style="margin: 5px 0;">{{ order.shipping_city }}, {{ order.shipping_department }}</p>
@@ -53,7 +53,7 @@
   </div>
 
   <div style="text-align: center; padding: 15px; color: #6B7280; font-size: 12px;">
-    <p>&copy; 2026 JuguetesParaFrikis. Todos los derechos reservados.</p>
+    <p>&copy; 2026 Juguetes para Frikis. Todos los derechos reservados.</p>
   </div>
 </body>
 </html>

@@ -94,7 +94,7 @@ class GoogleAccessTokenSerializer(SocialLoginSerializer):
             raise serializers.ValidationError("Token de Google requerido.")
         expected = settings.SOCIALACCOUNT_PROVIDERS["google"]["APP"]["client_id"]
         if not expected or google_token_audience(access_token) != expected:
-            raise serializers.ValidationError("Token de Google no valido.")
+            raise serializers.ValidationError("Token de Google no válido.")
         attrs.pop("id_token", None)
         attrs.pop("code", None)
         return super().validate(attrs)
@@ -128,7 +128,7 @@ class WishlistViewSet(viewsets.ViewSet):
             user=request.user, product=product
         )
         if not created:
-            return Response({"detail": "Ya esta en favoritos"}, status=status.HTTP_200_OK)
+            return Response({"detail": "Ya está en favoritos"}, status=status.HTTP_200_OK)
         return Response({"detail": "Agregado a favoritos"}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None):

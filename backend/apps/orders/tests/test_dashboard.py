@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from django.core import mail
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -147,7 +148,7 @@ class TestSalesByDay:
     @pytest.mark.parametrize("query,message", [
         ("desde=2026-13-01", "formato"),
         ("desde=2026-05-10&hasta=2026-05-01", "posterior"),
-        ("desde=2024-01-01&hasta=2026-01-01", "maximo"),
+        ("desde=2024-01-01&hasta=2026-01-01", "máximo"),
     ])
     def test_invalid_ranges(self, admin_client, query, message):
         resp = admin_client.get(f"/api/v1/admin/dashboard/sales-by-day/?{query}")
@@ -231,6 +232,7 @@ class TestAdminOrderStatus:
     def _url(self, order):
         return f"/api/v1/admin/orders/{order.id}/"
 
+    @pytest.mark.django_db(transaction=True)
     def test_paid_to_shipped_with_tracking_then_delivered(self, admin_client, buyer):
         order = _sale(buyer, _create_product(), timezone.localdate())
 
@@ -240,6 +242,8 @@ class TestAdminOrderStatus:
         assert resp.data["tracking_number"] == "GU123"
         order.refresh_from_db()
         assert order.shipped_at is not None
+        assert [m.subject for m in mail.outbox] == [f"Juguetes para Frikis — Tu pedido #{order.short_id} fue enviado"]
+        assert "GU123" in mail.outbox[0].body
 
         resp = admin_client.patch(self._url(order), {"status": "delivered"}, format="json")
         assert resp.status_code == 200
