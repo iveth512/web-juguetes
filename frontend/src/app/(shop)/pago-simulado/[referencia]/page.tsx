@@ -22,7 +22,7 @@ function SimulatedGateway() {
   useEffect(() => {
     getSimulatedCharge(referencia)
       .then(setCharge)
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se encontro el pago.'));
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'No encontramos este intento de pago. Revisa tus pedidos para pagar de nuevo.'));
   }, [referencia]);
 
   const resolve = async (resultado: 'aprobado' | 'rechazado') => {
@@ -32,7 +32,7 @@ function SimulatedGateway() {
       const res = await resolveSimulatedCharge(referencia, resultado);
       router.replace(`/pedido-confirmado/${res.order_id}?estado-pago=${resultado === 'aprobado' ? 'approved' : 'rejected'}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo procesar el pago.');
+      setError(err instanceof Error ? err.message : 'No pudimos procesar el pago simulado. Intenta de nuevo.');
       setBusy(null);
     }
   };
@@ -40,8 +40,8 @@ function SimulatedGateway() {
   if (error && !charge) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="mb-4 text-red-600">{error}</p>
-        <Link href="/pedidos" className="font-semibold text-[var(--color-primary)] hover:underline">Ver mis pedidos</Link>
+        <p className="mb-6 text-base text-[var(--color-error)]">{error}</p>
+        <Link href="/pedidos" className="inline-flex min-h-12 items-center rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]">Ver mis pedidos</Link>
       </div>
     );
   }
@@ -53,42 +53,41 @@ function SimulatedGateway() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900" role="note">
-        <strong>Pasarela de pago simulada.</strong> Entorno local de demostracion: no se realiza ningun cobro.
+      <div className="mb-4 rounded-xl bg-[var(--color-bg-alt)] px-4 py-3 text-sm text-[var(--color-text)]" role="note">
+        <strong>Pasarela de pago simulada.</strong> Entorno local de demostración: no se realiza ningún cobro.
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-sm">
-        <div className="bg-[var(--color-secondary-dark)] px-6 py-5 text-white">
-          <p className="text-xs uppercase tracking-wide opacity-80">Pagando a</p>
-          <p className="text-lg font-bold">Juguetes para Frikis</p>
-          <p className="mt-3 text-sm opacity-90">{charge.description}</p>
-          <p className="mt-1 text-3xl font-extrabold tabular-nums">
-            {formatPrice(charge.amount)} <span className="text-base font-semibold opacity-80">{charge.currency}</span>
+      <div className="overflow-hidden rounded-2xl bg-[var(--color-bg-alt)]">
+        <div className="bg-[var(--color-stage)] px-6 py-5 text-[var(--color-stage-text)]">
+          <p className="text-sm text-[var(--color-stage-muted)]">Pago a Juguetes para Frikis</p>
+          <p className="mt-3 text-sm text-[var(--color-stage-muted)]">{charge.description}</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums">
+            {formatPrice(charge.amount)} <span className="text-base font-semibold text-[var(--color-stage-muted)]">{charge.currency}</span>
           </p>
         </div>
 
         <div className="space-y-5 p-6">
-          <ul className="space-y-1 text-sm">
+          <ul className="space-y-2 text-base">
             {charge.items.map((item, i) => (
               <li key={i} className="flex justify-between gap-3 text-[var(--color-text)]">
-                <span className="truncate">{item.cantidad}× {item.nombre}{item.variante ? ` (${item.variante})` : ''}</span>
-                <span className="tabular-nums text-[var(--color-text-muted)]">{formatPrice(Number(item.precio) * item.cantidad)}</span>
+                <span className="min-w-0">{item.cantidad} × {item.nombre}{item.variante ? ` (${item.variante})` : ''}</span>
+                <span className="shrink-0 tabular-nums text-[var(--color-text-muted)]">{formatPrice(Number(item.precio) * item.cantidad)}</span>
               </li>
             ))}
           </ul>
 
-          <div className="rounded-lg border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]">
+          <div className="rounded-xl bg-[var(--color-bg-card)] p-4 text-sm text-[var(--color-text-muted)]">
             <p className="font-semibold text-[var(--color-text)]">Tarjeta de prueba</p>
             <p className="mt-1 font-mono">4111 1111 1111 1111 · 12/30 · 123</p>
-            <p className="mt-1 text-xs">Elige el resultado que quieres simular.</p>
+            <p className="mt-1 text-sm">Elige el resultado que quieres simular.</p>
           </div>
 
-          {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+          {error && <p className="rounded-xl border border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]" role="alert">{error}</p>}
 
           {processed ? (
-            <div className="text-center text-sm text-[var(--color-text-muted)]">
+            <div className="text-center text-base text-[var(--color-text-muted)]">
               <p className="mb-3">Este intento de pago ya fue {charge.status === 'approved' ? 'aprobado' : 'procesado'}.</p>
-              <Link href={`/pedido-confirmado/${charge.order_id}`} className="font-semibold text-[var(--color-primary)] hover:underline">
+              <Link href={`/pedido-confirmado/${charge.order_id}`} className="font-semibold text-[var(--color-primary-text)] hover:underline">
                 Ver el pedido
               </Link>
             </div>
@@ -98,21 +97,21 @@ function SimulatedGateway() {
                 type="button"
                 onClick={() => resolve('aprobado')}
                 disabled={busy !== null}
-                className="w-full rounded-lg bg-green-600 px-4 py-3 font-bold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                className="min-h-12 w-full rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busy === 'aprobado' ? 'Procesando...' : `Aprobar pago de ${formatPrice(charge.amount)}`}
+                {busy === 'aprobado' ? 'Procesando…' : `Aprobar pago de ${formatPrice(charge.amount)}`}
               </button>
               <button
                 type="button"
                 onClick={() => resolve('rechazado')}
                 disabled={busy !== null}
-                className="w-full rounded-lg border border-red-300 px-4 py-3 font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+                className="min-h-12 w-full rounded-full bg-[var(--color-bg-card)] px-6 text-base font-semibold text-[var(--color-error)] transition-colors hover:bg-[var(--color-bg)] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busy === 'rechazado' ? 'Procesando...' : 'Rechazar pago'}
+                {busy === 'rechazado' ? 'Procesando…' : 'Rechazar pago'}
               </button>
               <Link
                 href={`/pedido-confirmado/${charge.order_id}`}
-                className="block text-center text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+                className="flex min-h-11 items-center justify-center text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:underline"
               >
                 Volver a la tienda sin pagar
               </Link>

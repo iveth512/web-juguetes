@@ -2,43 +2,64 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/hooks/useCart';
-import { getProducts } from '@/lib/api';
+import { getProduct, getProducts } from '@/lib/api';
 import { ProductCard } from '@/components/product/ProductCard';
+
+const MAX_RECOMMENDATIONS = 4;
 
 export function CartRecommendations() {
   const { items } = useCart();
+  const cartProductIds = new Set(items.map((i) => i.productId));
+  // Cart lines don't store the franchise; the latest added item's detail has it.
+  const anchorSlug = items.at(-1)?.slug;
 
-  // Get franchise from first cart item (if available)
-  // We don't have franchise in CartItem, so we fetch general recommendations
-  const cartProductIds = items.map((i) => i.productId);
+  const { data: anchor, isFetched: anchorFetched } = useQuery({
+    queryKey: ['product', anchorSlug],
+    queryFn: () => getProduct(anchorSlug as string),
+    enabled: Boolean(anchorSlug),
+    staleTime: 5 * 60 * 1000,
+  });
+  const franchiseSlug = anchor?.franchise.slug;
 
-  const { data } = useQuery({
-    queryKey: ['cart-recommendations'],
-    queryFn: () => getProducts({ page_size: '8' }),
-    enabled: items.length > 0,
+  const { data: sameFranchise } = useQuery({
+    queryKey: ['cart-recommendations', 'franchise', franchiseSlug],
+    queryFn: () => getProducts({ franchise: franchiseSlug as string, page_size: '12' }),
+    enabled: Boolean(franchiseSlug),
   });
 
-  if (items.length === 0 || !data?.results?.length) {
-    return null;
-  }
+  const { data: general } = useQuery({
+    queryKey: ['cart-recommendations'],
+    queryFn: () => getProducts({ page_size: '12' }),
+    enabled: items.length > 0 && anchorFetched,
+  });
 
-  // Filter out products already in cart and limit to 4
-  const recommendations = data.results
-    .filter((p) => !cartProductIds.includes(p.id))
-    .slice(0, 4);
+  if (items.length === 0) return null;
+
+  const pool = [...(sameFranchise?.results ?? []), ...(general?.results ?? [])];
+  const seen = new Set<string>();
+  const recommendations = pool
+    .filter((p) => {
+      if (cartProductIds.has(p.id) || seen.has(p.id) || p.stock === 0) return false;
+      seen.add(p.id);
+      return true;
+    })
+    .slice(0, MAX_RECOMMENDATIONS);
 
   if (recommendations.length === 0) return null;
 
+  const franchiseIds = new Set(sameFranchise?.results.map((p) => p.id));
+  const fromFranchise = Boolean(anchor) && recommendations.every((p) => franchiseIds.has(p.id));
+
   return (
-    <div className="mt-8">
-      <h2 className="font-heading text-xl font-bold text-[var(--color-text)] mb-4">
-        Te puede interesar
+    <section className="mt-16" aria-labelledby="cart-recommendations-title">
+      <h2 id="cart-recommendations-title" className="type-section mb-6 text-[var(--color-text)]">
+        {fromFranchise ? `Más de ${anchor?.franchise.name}` : 'Te puede interesar'}
       </h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {recommendations.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

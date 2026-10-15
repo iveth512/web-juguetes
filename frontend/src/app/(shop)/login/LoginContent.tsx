@@ -8,7 +8,7 @@ import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { googleSignInEnabled } from '@/lib/google';
 
 const inputClassName =
-  'w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]';
+  'min-h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]';
 
 export function LoginContent() {
   const { login, loginWithGoogle, isAuthenticated } = useAuth();
@@ -21,7 +21,10 @@ export function LoginContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = searchParams.get('next') || '/';
+  const next = searchParams.get('next');
+  // Only same-site paths: an absolute URL here would be an open redirect.
+  const redirectTo = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  const isCheckout = redirectTo.startsWith('/checkout');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -38,7 +41,7 @@ export function LoginContent() {
       router.push(redirectTo);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Error al iniciar sesion. Verifica tus credenciales.';
+        err instanceof Error ? err.message : 'No pudimos iniciar sesión. Revisa tu correo y contraseña e intenta de nuevo.';
       setError(message);
     } finally {
       setLoading(false);
@@ -53,7 +56,7 @@ export function LoginContent() {
       router.push(redirectTo);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Error al iniciar sesion con Google.';
+        err instanceof Error ? err.message : 'No pudimos iniciar sesión con Google. Intenta de nuevo.';
       setError(message);
     } finally {
       setLoading(false);
@@ -64,11 +67,18 @@ export function LoginContent() {
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-sm">
-        <h1 className="font-heading text-2xl font-bold text-center mb-6">Iniciar Sesion</h1>
+      <div className="w-full max-w-md rounded-2xl bg-[var(--color-bg-alt)] p-6 sm:p-8">
+        <h1 className="type-page text-[clamp(2.25rem,4vw,2.75rem)] text-[var(--color-text)]">
+          {isCheckout ? 'Inicia sesión para finalizar tu compra' : 'Iniciar sesión'}
+        </h1>
+        <p className="mt-3 mb-6 text-base text-[var(--color-text-muted)]">
+          {isCheckout
+            ? 'Tu carrito se mantiene: al ingresar sigues directo al pago.'
+            : 'Ingresa para ver tus pedidos y comprar más rápido.'}
+        </p>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          <div role="alert" className="mb-4 rounded-xl border border-[var(--color-error)] bg-[var(--color-bg-card)] p-3 text-sm text-[var(--color-error)]">
             {error}
           </div>
         )}
@@ -76,11 +86,13 @@ export function LoginContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-              Correo electronico
+              Correo electrónico
             </label>
             <input
               id="email"
               type="email"
+              autoComplete="email"
+              inputMode="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -91,15 +103,15 @@ export function LoginContent() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-[var(--color-text)] mb-1">
-              Contrasena
+              Contraseña
             </label>
             <input
               id="password"
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tu contrasena"
               className={inputClassName}
             />
           </div>
@@ -111,23 +123,23 @@ export function LoginContent() {
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+                className="h-5 w-5 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
               />
               <label htmlFor="remember" className="text-sm text-[var(--color-text-muted)]">
                 Recordarme
               </label>
             </div>
-            <Link href="/recuperar-contrasena" className="text-sm text-[var(--color-primary)] hover:underline">
-              ¿Olvidaste tu contrasena?
+            <Link href="/recuperar-contrasena" className="flex min-h-11 items-center text-sm font-medium text-[var(--color-primary-text)] hover:underline">
+              ¿Olvidaste tu contraseña?
             </Link>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-12 w-full rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? 'Ingresando...' : 'Iniciar Sesion'}
+            {loading ? 'Ingresando…' : isCheckout ? 'Ingresar y continuar' : 'Iniciar sesión'}
           </button>
         </form>
 
@@ -135,10 +147,13 @@ export function LoginContent() {
           <GoogleSignInButton onToken={handleGoogleToken} onError={setError} disabled={loading} />
         )}
 
-        <p className="mt-6 text-center text-sm text-[var(--color-text-muted)]">
-          No tienes cuenta?{' '}
-          <Link href="/registro" className="font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]">
-            Registrate
+        <p className="mt-6 text-center text-base text-[var(--color-text-muted)]">
+          ¿No tienes cuenta?{' '}
+          <Link
+            href="/registro"
+            className="font-semibold text-[var(--color-primary-text)] hover:underline"
+          >
+            Regístrate
           </Link>
         </p>
       </div>

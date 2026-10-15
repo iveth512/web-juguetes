@@ -3,13 +3,77 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Truck } from 'lucide-react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { PaymentReassurance } from '@/components/cart/CartSummary';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useCart } from '@/hooks/useCart';
-import { createCheckout, getCheckoutQuote, type CheckoutQuote } from '@/lib/api';
-import { payButtonLabel, paymentHint, payOrder } from '@/lib/payments';
+import { createCheckout, getCheckoutQuote, getShippingZones, type CheckoutQuote } from '@/lib/api';
+import { payButtonLabel, payOrder } from '@/lib/payments';
 import { formatPrice } from '@/lib/utils';
+import type { ShippingZone } from '@/types/product';
+
+type FieldName =
+  | 'shipping_name'
+  | 'shipping_phone'
+  | 'shipping_address'
+  | 'shipping_city'
+  | 'shipping_department';
+
+interface FieldConfig {
+  name: FieldName;
+  label: string;
+  type: 'text' | 'tel';
+  autoComplete: string;
+  placeholder: string;
+  wide?: boolean;
+  missing: string;
+}
+
+const FIELDS: FieldConfig[] = [
+  { name: 'shipping_name', label: 'Nombre completo', type: 'text', autoComplete: 'name', placeholder: 'Nombre y apellido', missing: 'Escribe el nombre de quien recibe el pedido.' },
+  { name: 'shipping_phone', label: 'Teléfono', type: 'tel', autoComplete: 'tel', placeholder: 'Ej. 300 123 4567', missing: 'Escribe un teléfono para coordinar la entrega.' },
+  { name: 'shipping_address', label: 'Dirección', type: 'text', autoComplete: 'street-address', placeholder: 'Ej. Calle 123 # 45-67, apto 101', wide: true, missing: 'Escribe la dirección de entrega.' },
+  { name: 'shipping_city', label: 'Ciudad', type: 'text', autoComplete: 'address-level2', placeholder: 'Ej. Bogotá', missing: 'Escribe la ciudad: con ella calculamos el envío.' },
+  { name: 'shipping_department', label: 'Departamento', type: 'text', autoComplete: 'address-level1', placeholder: 'Ej. Cundinamarca', missing: 'Escribe el departamento.' },
+];
+
+const FALLBACK_ZONE = 'resto del pais';
+
+function normalize(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(' ');
+}
+
+/** Same matching the backend uses to price shipping (apps/shipping/services.find_zone). */
+function zoneForCity(zones: ShippingZone[] | undefined, city: string) {
+  if (!zones || !city.trim()) return null;
+  const target = normalize(city);
+  return (
+    zones.find((z) => normalize(z.name) === target) ??
+    zones.find((z) => normalize(z.name) === FALLBACK_ZONE) ??
+    null
+  );
+}
+
+function validate(form: Record<FieldName, string>): Partial<Record<FieldName, string>> {
+  const errors: Partial<Record<FieldName, string>> = {};
+  for (const field of FIELDS) {
+    if (!form[field.name].trim()) errors[field.name] = field.missing;
+  }
+  const digits = form.shipping_phone.replace(/\D/g, '');
+  if (!errors.shipping_phone && digits.length < 7) {
+    errors.shipping_phone = 'El teléfono parece incompleto. Revisa que tenga al menos 7 dígitos.';
+  }
+  return errors;
+}
 
 function CheckoutForm() {
   const router = useRouter();
@@ -18,19 +82,26 @@ function CheckoutForm() {
   const couponCode = useCartStore((s) => s.couponCode);
   const removeCoupon = useCartStore((s) => s.removeCoupon);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<FieldName, string>>({
     shipping_name: user ? `${user.first_name} ${user.last_name}`.trim() : '',
     shipping_phone: user?.phone || '',
     shipping_address: user?.address || '',
     shipping_city: user?.city || '',
     shipping_department: user?.department || '',
-    notes: '',
   });
+  const [notes, setNotes] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [quoteError, setQuoteError] = useState('');
+
+  const { data: zones } = useQuery<ShippingZone[]>({
+    queryKey: ['shipping-zones'],
+    queryFn: getShippingZones,
+  });
+  const zone = zoneForCity(zones, form.shipping_city);
 
   const checkoutItems = useMemo(
     () =>
@@ -57,19 +128,30 @@ function CheckoutForm() {
         })
         .catch((err: unknown) => {
           setQuote(null);
-          setQuoteError(err instanceof Error ? err.message : 'No se pudo calcular el total.');
+          setQuoteError(err instanceof Error ? err.message : 'No pudimos calcular el total. Recarga la página.');
         });
     }, 400);
     return () => clearTimeout(timer);
   }, [checkoutItems, form.shipping_city, couponCode]);
 
-  const updateField = (field: string, value: string) => {
+  const updateField = (field: FieldName, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (items.length === 0) return;
+    if (items.length === 0 || loading) return;
+
+    const errors = validate(form);
+    setFieldErrors(errors);
+    const firstInvalid = FIELDS.find((f) => errors[f.name]);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid.name)?.focus();
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -78,13 +160,13 @@ function CheckoutForm() {
     try {
       const order = await createCheckout({
         items: checkoutItems,
-        shipping_name: form.shipping_name,
-        shipping_phone: form.shipping_phone,
-        shipping_address: form.shipping_address,
-        shipping_city: form.shipping_city,
-        shipping_department: form.shipping_department,
+        shipping_name: form.shipping_name.trim(),
+        shipping_phone: form.shipping_phone.trim(),
+        shipping_address: form.shipping_address.trim(),
+        shipping_city: form.shipping_city.trim(),
+        shipping_department: form.shipping_department.trim(),
         coupon_code: couponCode || undefined,
-        notes: form.notes || undefined,
+        notes: notes.trim() || undefined,
       });
       orderId = order.id;
 
@@ -92,14 +174,18 @@ function CheckoutForm() {
       // The order now holds the items (and reserves their stock).
       clearCart();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al procesar el pedido';
+      const message = err instanceof Error ? err.message : '';
       if (orderId) {
         // The order exists; the customer can retry the payment from its page.
         clearCart();
         router.push(`/pedido-confirmado/${orderId}?error=payment_init`);
         return;
       }
-      setError(message.includes('API error') ? 'Error al procesar el pedido. Intenta de nuevo.' : message);
+      setError(
+        !message || message.includes('API error')
+          ? 'No pudimos crear tu pedido. Revisa tu conexión e intenta de nuevo; no se hizo ningún cobro.'
+          : message
+      );
     } finally {
       setLoading(false);
     }
@@ -112,16 +198,14 @@ function CheckoutForm() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12 text-center">
-        <h1 className="font-heading text-2xl font-bold text-[var(--color-text)] mb-4">
-          Tu carrito esta vacio
-        </h1>
-        <p className="text-[var(--color-text-muted)] mb-6">
-          Agrega productos antes de continuar al checkout.
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <h1 className="type-page mb-4 text-[var(--color-text)]">Tu carrito está vacío</h1>
+        <p className="mb-8 text-base text-[var(--color-text-muted)]">
+          Agrega productos antes de finalizar la compra.
         </p>
         <Link
           href="/productos"
-          className="inline-block px-6 py-3 rounded-lg bg-[var(--color-primary)] text-white font-semibold hover:bg-[var(--color-primary-hover)] transition-colors"
+          className="inline-flex min-h-12 items-center rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
         >
           Ver productos
         </Link>
@@ -129,220 +213,178 @@ function CheckoutForm() {
     );
   }
 
-  const inputClass =
-    'w-full px-4 py-2.5 border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] text-sm';
+  const inputBase =
+    'min-h-12 w-full rounded-xl border bg-[var(--color-bg-card)] px-4 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]';
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      {/* Breadcrumbs */}
-      <nav className="text-sm text-[var(--color-text-muted)] mb-6">
-        <Link href="/" className="hover:text-[var(--color-primary)] transition-colors">Inicio</Link>
-        <span className="mx-2">/</span>
-        <Link href="/carrito" className="hover:text-[var(--color-primary)] transition-colors">Carrito</Link>
-        <span className="mx-2">/</span>
-        <span className="text-[var(--color-text)]">Checkout</span>
+    <div className="mx-auto max-w-7xl px-4 py-8 md:py-10">
+      <nav aria-label="Ruta de navegación" className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-muted)]">
+        <Link href="/" className="transition-colors hover:text-[var(--color-primary-text)]">Inicio</Link>
+        <span aria-hidden="true">/</span>
+        <Link href="/carrito" className="transition-colors hover:text-[var(--color-primary-text)]">Carrito</Link>
+        <span aria-hidden="true">/</span>
+        <span className="text-[var(--color-text)]" aria-current="page">Finalizar compra</span>
       </nav>
 
-      <h1 className="font-heading text-2xl md:text-3xl font-bold text-[var(--color-text)] mb-8">
-        Finalizar compra
-      </h1>
+      <h1 className="type-page mb-8 text-[var(--color-text)]">Finalizar compra</h1>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left column: shipping form */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Datos de envio */}
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-6">
-            <h2 className="font-heading text-lg font-bold text-[var(--color-text)] mb-4">
-              Datos de envio
+      <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px] lg:gap-12">
+        <div className="space-y-6">
+          <section aria-labelledby="shipping-title" className="rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
+            <h2 id="shipping-title" className="mb-1 text-xl font-bold text-[var(--color-text)]">
+              Datos de envío
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Nombre completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={form.shipping_name}
-                  onChange={(e) => updateField('shipping_name', e.target.value)}
-                  className={inputClass}
-                  placeholder="Juan Perez"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Telefono *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={form.shipping_phone}
-                  onChange={(e) => updateField('shipping_phone', e.target.value)}
-                  className={inputClass}
-                  placeholder="300 123 4567"
-                />
-              </div>
+            <p className="mb-5 text-sm text-[var(--color-text-muted)]">Todos los campos son obligatorios.</p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {FIELDS.map((field) => {
+                const fieldError = fieldErrors[field.name];
+                const errorId = `${field.name}-error`;
+                return (
+                  <div key={field.name} className={field.wide ? 'md:col-span-2' : undefined}>
+                    <label htmlFor={field.name} className="mb-1 block text-sm font-medium text-[var(--color-text)]">
+                      {field.label}
+                    </label>
+                    <input
+                      id={field.name}
+                      name={field.name}
+                      type={field.type}
+                      inputMode={field.type === 'tel' ? 'tel' : undefined}
+                      autoComplete={field.autoComplete}
+                      required
+                      aria-required="true"
+                      aria-invalid={fieldError ? true : undefined}
+                      aria-describedby={fieldError ? errorId : undefined}
+                      value={form[field.name]}
+                      onChange={(e) => updateField(field.name, e.target.value)}
+                      className={`${inputBase} ${fieldError ? 'border-[var(--color-error)]' : 'border-[var(--color-border)]'}`}
+                      placeholder={field.placeholder}
+                    />
+                    {fieldError && (
+                      <p id={errorId} className="mt-1 text-sm text-[var(--color-error)]">
+                        {fieldError}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Direccion *
+                <label htmlFor="notes" className="mb-1 block text-sm font-medium text-[var(--color-text)]">
+                  Notas para la entrega <span className="font-normal text-[var(--color-text-muted)]">(opcional)</span>
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={form.shipping_address}
-                  onChange={(e) => updateField('shipping_address', e.target.value)}
-                  className={inputClass}
-                  placeholder="Calle 123 #45-67, Apto 101"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Ciudad *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={form.shipping_city}
-                  onChange={(e) => updateField('shipping_city', e.target.value)}
-                  className={inputClass}
-                  placeholder="Bogota"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Departamento *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={form.shipping_department}
-                  onChange={(e) => updateField('shipping_department', e.target.value)}
-                  className={inputClass}
-                  placeholder="Cundinamarca"
+                <textarea
+                  id="notes"
+                  name="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  className={`${inputBase} border-[var(--color-border)] py-3`}
+                  placeholder="Ej. dejar en portería, horario de entrega"
                 />
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* Right column: order summary */}
-        <div className="space-y-6">
-          {/* Resumen del pedido */}
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-6 sticky top-[100px] lg:top-[180px]">
-            <h2 className="font-heading text-lg font-bold text-[var(--color-text)] mb-4">
-              Resumen del pedido
-            </h2>
+        <div>
+          <div className="sticky top-[116px] lg:top-[164px] space-y-5 rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
+            <h2 className="text-xl font-bold text-[var(--color-text)]">Resumen del pedido</h2>
 
-            {/* Items */}
-            <div className="space-y-3 mb-4">
+            <ul className="space-y-3">
               {items.map((item) => (
-                <div key={`${item.productId}-${item.variantId || ''}`} className="flex justify-between text-sm">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[var(--color-text)] truncate">{item.name}</p>
-                    {item.variantName && (
-                      <p className="text-xs text-[var(--color-text-muted)] truncate">{item.variantName}</p>
-                    )}
-                    <p className="text-[var(--color-text-muted)]">x{item.quantity}</p>
+                <li key={`${item.productId}-${item.variantId || ''}`} className="flex justify-between gap-3 text-base">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[var(--color-text)]">{item.name}</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      {item.variantName ? `${item.variantName} · ` : ''}
+                      {item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'}
+                    </p>
                   </div>
-                  <span className="font-semibold text-[var(--color-text)] ml-2">
+                  <span className="shrink-0 font-semibold tabular-nums text-[var(--color-text)]">
                     {formatPrice(item.price * item.quantity)}
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
 
-            <hr className="border-[var(--color-border)] mb-4" />
-
-            {/* Totals */}
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[var(--color-text-muted)]">Subtotal</span>
-                <span className="font-semibold text-[var(--color-text)]">{formatPrice(displaySubtotal)}</span>
+            <dl className="space-y-2 pt-2 text-base">
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-text-muted)]">Subtotal</dt>
+                <dd className="font-semibold tabular-nums text-[var(--color-text)]">{formatPrice(displaySubtotal)}</dd>
               </div>
               {displayDiscount > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-green-600">Cupon ({couponCode})</span>
-                  <span className="font-semibold text-green-600">-{formatPrice(displayDiscount)}</span>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-[var(--color-text)]">Cupón {couponCode}</dt>
+                  <dd className="font-semibold tabular-nums text-[var(--color-text)]">−{formatPrice(displayDiscount)}</dd>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-[var(--color-text-muted)]">Envio</span>
-                {shippingCost === null ? (
-                  <span className="text-[var(--color-text-muted)]">Calculando...</span>
-                ) : shippingCost === 0 ? (
-                  <span className="font-semibold text-green-600">Gratis!</span>
-                ) : (
-                  <span className="font-semibold text-[var(--color-text)]">{formatPrice(shippingCost)}</span>
-                )}
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-text-muted)]">Envío</dt>
+                <dd className="text-right text-[var(--color-text)]">
+                  {shippingCost === null ? (
+                    <span className="text-[var(--color-text-muted)]">Calculando…</span>
+                  ) : shippingCost === 0 ? (
+                    <span className="font-semibold">Gratis</span>
+                  ) : (
+                    <span className="font-semibold tabular-nums">{formatPrice(shippingCost)}</span>
+                  )}
+                </dd>
               </div>
-            </div>
-
-            <hr className="border-[var(--color-border)] my-4" />
-
-            <div className="flex justify-between mb-4">
-              <span className="text-base font-bold text-[var(--color-text)]">Total</span>
-              <span className="font-heading text-xl font-extrabold text-[var(--color-primary)]">
-                {total === null ? '—' : formatPrice(total)}
-              </span>
-            </div>
+              <div className="flex items-baseline justify-between gap-4 pt-3">
+                <dt className="font-bold text-[var(--color-text)]">Total</dt>
+                <dd className="text-2xl font-bold tabular-nums text-[var(--color-text)]" aria-live="polite">
+                  {total === null ? '—' : formatPrice(total)}
+                </dd>
+              </div>
+            </dl>
 
             {quoteError && (
-              <div className="mb-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
+              <div role="alert" className="rounded-xl border border-[var(--color-error)] bg-[var(--color-bg-card)] p-3 text-sm text-[var(--color-text)]">
                 {quoteError}
                 {couponCode && (
                   <button
                     type="button"
                     onClick={removeCoupon}
-                    className="block mt-1 underline font-semibold"
+                    className="mt-1 block min-h-11 font-semibold text-[var(--color-primary-text)] underline"
                   >
-                    Quitar cupon {couponCode}
+                    Quitar el cupón {couponCode}
                   </button>
                 )}
               </div>
             )}
 
-            {/* Notes */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                Notas (opcional)
-              </label>
-              <textarea
-                value={form.notes}
-                onChange={(e) => updateField('notes', e.target.value)}
-                rows={3}
-                className={inputClass}
-                placeholder="Instrucciones especiales para tu pedido..."
-              />
-            </div>
-
-            {/* Error */}
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              <div role="alert" className="rounded-xl border border-[var(--color-error)] bg-[var(--color-bg-card)] p-3 text-sm text-[var(--color-error)]">
                 {error}
               </div>
             )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading || !quote}
-              className="w-full py-3.5 rounded-lg text-base font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Procesando...
-                </span>
-              ) : (
-                payButtonLabel
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={loading || !quote}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} aria-hidden="true" />
+                    Creando tu pedido…
+                  </>
+                ) : (
+                  payButtonLabel
+                )}
+              </button>
+              <PaymentReassurance />
+              {zone && (
+                <p className="flex items-center justify-center gap-2 text-sm text-[var(--color-text-muted)]">
+                  <Truck className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                  Entrega estimada: {zone.min_days}–{zone.max_days} días hábiles
+                </p>
               )}
-            </button>
-            <p className="mt-3 text-xs text-center text-[var(--color-text-muted)]">
-              {paymentHint}
-            </p>
+              <p className="text-center text-sm text-[var(--color-text-muted)]">
+                Reservamos tus productos por 60 minutos mientras pagas.
+              </p>
+            </div>
           </div>
         </div>
       </form>

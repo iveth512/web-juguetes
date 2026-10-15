@@ -2,170 +2,104 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { CartItem as CartItemType } from '@/types/cart';
 
 interface CartItemProps {
   item: CartItemType;
-  variant: 'compact' | 'full';
+  /** Only the full row remains; kept so existing callers stay valid. */
+  variant?: 'full';
 }
 
-export function CartItem({ item, variant }: CartItemProps) {
-  const { removeItem, updateQuantity } = useCartStore();
+const stepperButton =
+  'flex h-11 w-11 items-center justify-center text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg-alt)] disabled:cursor-not-allowed disabled:opacity-40';
 
-  const handleRemove = () => {
-    removeItem(item.productId, item.variantId);
-  };
+export function CartItem({ item }: CartItemProps) {
+  const removeItem = useCartStore((s) => s.removeItem);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
 
-  const handleDecrement = () => {
-    if (item.quantity > 1) {
-      updateQuantity(item.productId, item.quantity - 1, item.variantId);
-    } else {
-      removeItem(item.productId, item.variantId);
-    }
-  };
+  const atMax = item.quantity >= item.maxStock;
 
-  const handleIncrement = () => {
-    if (item.quantity < item.maxStock) {
-      updateQuantity(item.productId, item.quantity + 1, item.variantId);
-    }
-  };
-
-  if (variant === 'compact') {
-    return (
-      <div className="py-3 px-2.5 border-b border-[var(--color-border)]">
-        {/* Product name - bold */}
-        <Link href={`/productos/${item.slug}`}>
-          <h4 className="text-[11px] font-bold text-[var(--color-text)] line-clamp-2 leading-tight hover:text-[var(--color-primary)] transition-colors mb-2">
-            {item.name}
-          </h4>
-        </Link>
-
-        {/* Image centered */}
-        <Link href={`/productos/${item.slug}`} className="block mx-auto w-fit mb-2">
-          <div className="relative w-[90px] h-[90px] rounded overflow-hidden bg-[var(--color-bg-alt)] mx-auto">
-            {item.image ? (
-              <Image
-                src={item.image}
-                alt={item.name}
-                fill
-                sizes="90px"
-                className="object-contain"
-                unoptimized
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-xs">
-                [Img]
-              </div>
-            )}
-          </div>
-        </Link>
-
-        {/* Price below image */}
-        <p className="text-xs font-bold text-[var(--color-primary)] text-center mb-2">
-          {formatPrice(item.price)}
-        </p>
-
-        {/* Quantity controls: - quantity + */}
-        <div className="flex items-center justify-center">
-          <div className="flex items-center border border-[var(--color-primary)] rounded overflow-hidden">
-            <button
-              onClick={handleDecrement}
-              className="w-8 h-8 flex items-center justify-center text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
-            >
-              -
-            </button>
-            <span className="w-8 h-8 flex items-center justify-center text-sm font-semibold border-x border-[var(--color-primary)]">
-              {item.quantity}
-            </span>
-            <button
-              onClick={handleIncrement}
-              disabled={item.quantity >= item.maxStock}
-              className="w-8 h-8 flex items-center justify-center text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white disabled:opacity-30 transition-colors"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Full variant (for cart page)
   return (
-    <div className="flex items-start gap-4 py-4 border-b border-[var(--color-border)]">
-      <Link href={`/productos/${item.slug}`} className="flex-shrink-0">
-        <div className="relative w-[120px] h-[120px] rounded-lg overflow-hidden bg-[var(--color-bg-alt)]">
-          {item.image ? (
+    <div className="flex items-start gap-4 py-4">
+      <Link href={`/productos/${item.slug}`} className="shrink-0" tabIndex={-1} aria-hidden="true">
+        <div className="relative h-24 w-24 overflow-hidden rounded-xl bg-[var(--color-bg-alt)] sm:h-28 sm:w-28">
+          {item.image && (
             <Image
               src={item.image}
-              alt={item.name}
+              alt=""
               fill
-              sizes="120px"
-              className="object-cover"
+              sizes="112px"
+              className="object-contain"
               unoptimized
             />
-          ) : (
-            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm">
-              [Imagen]
-            </div>
           )}
         </div>
       </Link>
 
-      <div className="flex-1 min-w-0">
-        <Link href={`/productos/${item.slug}`}>
-          <h3 className="text-base font-semibold text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
-            {item.name}
-          </h3>
-        </Link>
-        {item.variantName && (
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Variante: {item.variantName}</p>
-        )}
-
-        <p className="text-lg font-bold text-[var(--color-primary)] mt-2">
-          {formatPrice(item.price)}
-        </p>
-
-        <div className="flex items-center gap-4 mt-3">
-          <div className="flex items-center border border-[var(--color-border)] rounded-lg overflow-hidden">
-            <button
-              onClick={handleDecrement}
-              disabled={item.quantity <= 1}
-              className="w-9 h-9 flex items-center justify-center text-base font-bold hover:bg-[var(--color-bg-alt)] disabled:opacity-30 transition-colors"
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <Link
+              href={`/productos/${item.slug}`}
+              className="text-base font-semibold leading-snug text-[var(--color-text)] transition-colors hover:text-[var(--color-primary-text)]"
             >
-              -
+              {item.name}
+            </Link>
+            {item.variantName && (
+              <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">{item.variantName}</p>
+            )}
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              {formatPrice(item.price)} c/u
+            </p>
+          </div>
+          <p className="text-base font-bold tabular-nums text-[var(--color-text)] sm:text-right">
+            {formatPrice(item.price * item.quantity)}
+          </p>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center overflow-hidden rounded-full border border-[var(--color-border)]">
+            <button
+              type="button"
+              onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
+              disabled={item.quantity <= 1}
+              aria-label={`Quitar una unidad de ${item.name}`}
+              className={stepperButton}
+            >
+              <Minus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             </button>
-            <span className="w-10 h-9 flex items-center justify-center text-sm font-medium border-x border-[var(--color-border)]">
+            <span className="w-8 text-center text-base font-semibold tabular-nums" aria-live="polite">
               {item.quantity}
             </span>
             <button
-              onClick={handleIncrement}
-              disabled={item.quantity >= item.maxStock}
-              className="w-9 h-9 flex items-center justify-center text-base font-bold hover:bg-[var(--color-bg-alt)] disabled:opacity-30 transition-colors"
+              type="button"
+              onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
+              disabled={atMax}
+              aria-label={`Agregar una unidad de ${item.name}`}
+              className={stepperButton}
             >
-              +
+              <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
 
           <button
-            onClick={handleRemove}
-            className={cn(
-              'text-sm text-[var(--color-text-muted)] hover:text-red-500 transition-colors'
-            )}
+            type="button"
+            onClick={() => removeItem(item.productId, item.variantId)}
+            className="flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-error)]"
           >
+            <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             Eliminar
           </button>
-        </div>
-      </div>
 
-      <div className="flex-shrink-0 text-right">
-        <p className="text-sm text-[var(--color-text-muted)]">Subtotal</p>
-        <p className="text-base font-bold text-[var(--color-text)]">
-          {formatPrice(item.price * item.quantity)}
-        </p>
+          {atMax && (
+            <p className="w-full text-sm text-[var(--color-text-muted)]">
+              Ya tienes todas las unidades disponibles ({item.maxStock}).
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

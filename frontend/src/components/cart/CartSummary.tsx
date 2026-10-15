@@ -2,11 +2,72 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Lock, Truck, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { validateCoupon } from '@/lib/api';
+import { paymentProvider } from '@/lib/payments';
+
+/** Mirrors the backend default (SHIPPING_FREE_THRESHOLD and every seeded zone). */
+export const FREE_SHIPPING_THRESHOLD = 250000;
+
+const UNKNOWN_COUPON = 'Ese cupón no existe o ya venció. Revisa que esté bien escrito.';
+
+function couponErrorMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : '';
+  // The backend's generic "not valid" text gives no recovery; specific reasons
+  // (minimum purchase, usage limit, throttling) are worth showing as they are.
+  if (!message || message.startsWith('API error') || /^cup[oó]n no v[aá]lido/i.test(message)) {
+    return UNKNOWN_COUPON;
+  }
+  return message;
+}
+
+export function FreeShippingProgress({ subtotal }: { subtotal: number }) {
+  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const percent = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
+
+  return (
+    <div>
+      <p className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+        <Truck className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+        {remaining === 0 ? (
+          <span className="font-semibold">¡Tienes envío gratis!</span>
+        ) : (
+          <span>
+            Te faltan <span className="font-semibold">{formatPrice(remaining)}</span> para el envío gratis
+          </span>
+        )}
+      </p>
+      <div
+        className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--color-border)]"
+        role="progressbar"
+        aria-label="Progreso hacia el envío gratis"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
+        <div
+          className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-300"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function PaymentReassurance() {
+  return (
+    <p className="flex items-center justify-center gap-2 text-sm text-[var(--color-text-muted)]">
+      <Lock className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+      {paymentProvider === 'simulado'
+        ? 'Pasarela de prueba: no se realiza ningún cobro'
+        : 'Pago seguro con Bold'}
+    </p>
+  );
+}
 
 export function CartSummary() {
   const { subtotal, isFreeShipping } = useCart();
@@ -25,7 +86,8 @@ export function CartSummary() {
   // Shipping depends on the destination city; it is priced at checkout.
   const total = subtotal - couponDiscount;
 
-  const handleApplyCoupon = async () => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!inputCode.trim()) return;
     setCouponError('');
     setCouponLoading(true);
@@ -34,9 +96,7 @@ export function CartSummary() {
       applyCoupon(result.code, parseFloat(result.discount_amount));
       setInputCode('');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Cupon no valido';
-      // Try to extract detail from API error
-      setCouponError(message.includes('API error') ? 'Cupon no valido' : message);
+      setCouponError(couponErrorMessage(err));
     } finally {
       setCouponLoading(false);
     }
@@ -48,96 +108,100 @@ export function CartSummary() {
   };
 
   const handleCheckout = () => {
-    if (!isAuthenticated) {
-      router.push('/login?next=/checkout');
-      return;
-    }
-    router.push('/checkout');
+    router.push(isAuthenticated ? '/checkout' : '/login?next=/checkout');
   };
 
   return (
-    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-5 sticky top-[100px] lg:top-[180px]">
-      <h2 className="font-heading text-lg font-bold text-[var(--color-text)] mb-4">
-        Resumen del pedido
-      </h2>
+    <div className="sticky top-[116px] lg:top-[164px] space-y-5 rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
+      <h2 className="text-xl font-bold text-[var(--color-text)]">Resumen del pedido</h2>
 
-      {/* Subtotal */}
-      <div className="flex justify-between text-sm mb-2">
-        <span className="text-[var(--color-text-muted)]">Subtotal</span>
-        <span className="font-semibold text-[var(--color-text)]">{formatPrice(subtotal)}</span>
-      </div>
+      <FreeShippingProgress subtotal={subtotal} />
 
-      {/* Coupon discount */}
-      {couponDiscount > 0 && (
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-green-600 flex items-center gap-1">
-            Cupon ({couponCode})
-            <button
-              onClick={handleRemoveCoupon}
-              className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
-              aria-label="Quitar cupon"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </span>
-          <span className="font-semibold text-green-600">-{formatPrice(couponDiscount)}</span>
+      <dl className="space-y-2 text-base">
+        <div className="flex justify-between gap-4">
+          <dt className="text-[var(--color-text-muted)]">Subtotal</dt>
+          <dd className="font-semibold tabular-nums text-[var(--color-text)]">{formatPrice(subtotal)}</dd>
         </div>
-      )}
 
-      {/* Shipping */}
-      <div className="flex justify-between text-sm mb-4">
-        <span className="text-[var(--color-text-muted)]">Envio</span>
-        {isFreeShipping ? (
-          <span className="font-semibold text-green-600">Gratis!</span>
-        ) : (
-          <span className="text-[var(--color-text-muted)]">Se calcula en el checkout</span>
+        {couponDiscount > 0 && (
+          <div className="flex justify-between gap-4">
+            <dt className="flex items-center gap-1 text-[var(--color-text)]">
+              Cupón {couponCode}
+              <button
+                type="button"
+                onClick={handleRemoveCoupon}
+                className="-my-2 flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-error)]"
+                aria-label={`Quitar el cupón ${couponCode}`}
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              </button>
+            </dt>
+            <dd className="font-semibold tabular-nums text-[var(--color-text)]">−{formatPrice(couponDiscount)}</dd>
+          </div>
         )}
-      </div>
 
-      <hr className="border-[var(--color-border)] mb-4" />
+        <div className="flex justify-between gap-4">
+          <dt className="text-[var(--color-text-muted)]">Envío</dt>
+          <dd className="text-right text-[var(--color-text)]">
+            {isFreeShipping ? <span className="font-semibold">Gratis</span> : 'Se calcula al ingresar tu ciudad'}
+          </dd>
+        </div>
 
-      {/* Total */}
-      <div className="flex justify-between mb-6">
-        <span className="text-base font-bold text-[var(--color-text)]">{isFreeShipping ? "Total" : "Total sin envio"}</span>
-        <span className="font-heading text-xl font-extrabold text-[var(--color-primary)]">
-          {formatPrice(Math.max(0, total))}
-        </span>
-      </div>
+        <div className="flex items-baseline justify-between gap-4 pt-3">
+          <dt className="font-bold text-[var(--color-text)]">{isFreeShipping ? 'Total' : 'Total sin envío'}</dt>
+          <dd className="text-2xl font-bold tabular-nums text-[var(--color-text)]">
+            {formatPrice(Math.max(0, total))}
+          </dd>
+        </div>
+      </dl>
 
-      {/* Coupon input */}
       {!couponCode && (
-        <div className="mb-4">
+        <form onSubmit={handleApplyCoupon} noValidate>
+          <label htmlFor="coupon-code" className="mb-1 block text-sm font-medium text-[var(--color-text)]">
+            ¿Tienes un cupón?
+          </label>
           <div className="flex gap-2">
             <input
+              id="coupon-code"
               type="text"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
               value={inputCode}
-              onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-              placeholder="Codigo de cupon"
-              className="flex-1 px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+              onChange={(e) => {
+                setInputCode(e.target.value.toUpperCase());
+                if (couponError) setCouponError('');
+              }}
+              aria-invalid={couponError ? true : undefined}
+              aria-describedby={couponError ? 'coupon-error' : undefined}
+              className="min-h-11 min-w-0 flex-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]"
             />
             <button
-              onClick={handleApplyCoupon}
+              type="submit"
               disabled={couponLoading || !inputCode.trim()}
-              className="px-4 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-bg-alt)] transition-colors text-[var(--color-text)] disabled:opacity-50"
+              className="min-h-11 rounded-full bg-[var(--color-bg-card)] px-5 text-base font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-border)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {couponLoading ? '...' : 'Aplicar'}
+              {couponLoading ? 'Validando…' : 'Aplicar'}
             </button>
           </div>
           {couponError && (
-            <p className="text-xs text-red-500 mt-1">{couponError}</p>
+            <p id="coupon-error" role="alert" className="mt-2 text-sm text-[var(--color-error)]">
+              {couponError}
+            </p>
           )}
-        </div>
+        </form>
       )}
 
-      {/* Checkout button */}
-      <button
-        onClick={handleCheckout}
-        className="w-full py-3.5 rounded-lg text-base font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors"
-      >
-        Proceder al Pago
-      </button>
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={handleCheckout}
+          className="min-h-12 w-full rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
+        >
+          Continuar con la compra
+        </button>
+        <PaymentReassurance />
+      </div>
     </div>
   );
 }

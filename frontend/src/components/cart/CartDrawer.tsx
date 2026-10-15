@@ -1,84 +1,155 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { Check, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { useCart } from '@/hooks/useCart';
-import { CartItem } from './CartItem';
+import { useCartStore } from '@/stores/cartStore';
+import type { CartItem } from '@/types/cart';
 
+const AUTO_DISMISS_MS = 4000;
+
+interface AddedNotice {
+  item: CartItem;
+  addedQuantity: number;
+  id: number;
+}
+
+function sameLine(a: CartItem, b: CartItem) {
+  return a.productId === b.productId && a.variantId === b.variantId;
+}
+
+/**
+ * "Added to cart" confirmation. Kept under the CartDrawer name because the
+ * root layout mounts it; it reacts to the same store signal (addItem opens
+ * the drawer) but shows a small dismissible notice instead of a side rail.
+ */
 export function CartDrawer() {
-  const { items, isDrawerOpen, closeDrawer, totalItems, subtotal, isFreeShipping, hasHydrated } = useCart();
-
-  const displayItems = hasHydrated ? items : [];
-  const displayTotal = hasHydrated ? totalItems : 0;
-  const displaySubtotal = hasHydrated ? subtotal : 0;
-  const displayFreeShipping = hasHydrated ? isFreeShipping : false;
-
-  // Auto-close when cart becomes empty
-  useEffect(() => {
-    if (hasHydrated && totalItems === 0 && isDrawerOpen) {
-      closeDrawer();
-    }
-  }, [totalItems, hasHydrated, isDrawerOpen, closeDrawer]);
-
+  const closeDrawer = useCartStore((s) => s.closeDrawer);
+  const [notice, setNotice] = useState<AddedNotice | null>(null);
+  const [paused, setPaused] = useState(false);
   const pathname = usePathname();
-  // On checkout it would also cover the order summary and the pay button.
-  const isOnCartPage = pathname === '/carrito' || pathname === '/checkout';
 
-  // Show panel whenever there are items and not on cart/checkout pages
-  const isVisible = displayTotal > 0 && !isOnCartPage;
+  useEffect(
+    () =>
+      useCartStore.subscribe((state, prev) => {
+        if (!state.isDrawerOpen || state.items === prev.items) return;
+        for (const item of state.items) {
+          const before = prev.items.find((p) => sameLine(p, item));
+          const added = item.quantity - (before?.quantity ?? 0);
+          if (added > 0) {
+            setNotice({ item, addedQuantity: added, id: Date.now() });
+            return;
+          }
+        }
+      }),
+    []
+  );
+
+  const dismiss = useCallback(() => {
+    setNotice(null);
+    setPaused(false);
+    closeDrawer();
+  }, [closeDrawer]);
+
+  useEffect(() => {
+    if (!notice || paused) return;
+    const timer = setTimeout(dismiss, AUTO_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [notice, paused, dismiss]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismiss();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [notice, dismiss]);
+
+  // The cart and checkout pages already show the cart contents.
+  const onCartPage = pathname === '/carrito' || pathname === '/checkout';
+  const visible = notice !== null && !onCartPage;
 
   return (
     <div
-      className={cn(
-        'hidden lg:flex fixed top-0 right-0 bottom-0 z-[70] w-[180px]',
-        'bg-[var(--color-bg)] shadow-2xl border-l border-[var(--color-border)]',
-        'lg:flex-col',
-        'transition-transform duration-300 ease-in-out',
-        isVisible ? 'translate-x-0' : 'translate-x-full'
-      )}
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] md:bottom-auto md:top-[112px] lg:top-[160px] md:justify-end md:px-6"
     >
-      {/* Top: Subtotal + CTA */}
-      <div className="px-2.5 pt-3 pb-2 border-b border-[var(--color-border)]">
-        <div className="text-center mb-1.5">
-          <p className="text-[10px] text-[var(--color-text-muted)]">Subtotal</p>
-          <p className="font-heading text-sm font-extrabold text-[var(--color-text)]">
-            {formatPrice(displaySubtotal)}
-          </p>
-        </div>
-
-        {displayFreeShipping && (
-          <p className="text-[10px] text-green-600 font-semibold text-center mb-1.5">
-            Envio gratis!
-          </p>
-        )}
-
-        {displayTotal > 0 && !displayFreeShipping && (
-          <p className="text-[9px] text-[var(--color-text-muted)] text-center mb-1.5">
-            Envio calculado al finalizar
-          </p>
-        )}
-
-        <Link
-          href="/carrito"
-          className="block w-full py-1.5 rounded border border-[var(--color-border)] text-center text-[11px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] transition-colors"
+      {visible && (
+        <div
+          key={notice.id}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
+          }}
+          className="pointer-events-auto w-full max-w-[400px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 shadow-xl animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:slide-in-from-top-2 duration-200"
         >
-          Ir al carrito
-        </Link>
-      </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
+              <Check className="h-5 w-5 text-[var(--color-primary-text)]" strokeWidth={1.75} aria-hidden="true" />
+              Agregado al carrito
+            </p>
+            <button
+              type="button"
+              onClick={dismiss}
+              aria-label="Cerrar aviso"
+              className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-alt)] hover:text-[var(--color-text)]"
+            >
+              <X className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
 
-      {/* Items */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {displayItems.map((item) => (
-          <CartItem
-            key={`${item.productId}-${item.variantId || 'default'}`}
-            item={item}
-            variant="compact"
-          />
-        ))}
-      </div>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-alt)]">
+              {notice.item.image && (
+                <Image
+                  src={notice.item.image}
+                  alt=""
+                  fill
+                  sizes="64px"
+                  className="object-contain"
+                  unoptimized
+                />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--color-text)]">
+                {notice.item.name}
+              </p>
+              {notice.item.variantName && (
+                <p className="text-sm text-[var(--color-text-muted)]">{notice.item.variantName}</p>
+              )}
+              <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+                {notice.addedQuantity > 1 ? `${notice.addedQuantity} × ` : ''}
+                <span className="font-semibold text-[var(--color-text)]">{formatPrice(notice.item.price)}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            <Link
+              href="/carrito"
+              onClick={dismiss}
+              className="flex min-h-11 flex-1 items-center justify-center rounded-full bg-[var(--color-primary)] px-5 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
+            >
+              Ver carrito
+            </Link>
+            <button
+              type="button"
+              onClick={dismiss}
+              className="min-h-11 rounded-full px-4 text-base font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg-alt)]"
+            >
+              Seguir comprando
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

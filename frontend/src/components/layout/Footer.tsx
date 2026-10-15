@@ -62,7 +62,7 @@ export function Footer() {
 
         <p
           aria-hidden="true"
-          className="type-hero mt-16 select-none whitespace-nowrap text-[clamp(2rem,calc(21vw-8px),17rem)] leading-[0.82] text-[var(--color-primary)] md:mt-24"
+          className="type-hero mt-16 select-none whitespace-nowrap text-[clamp(1.75rem,calc(11.6vw-4px),9.25rem)] leading-[0.82] text-[var(--color-primary)] md:mt-24"
         >
           Juguetes para frikis
         </p>
