@@ -28,11 +28,13 @@ function presetRange(preset: string): DateRange {
   return { desde: isoDate(start), hasta: isoDate(today) };
 }
 
+// "Últimos N días" rolls back from today; the month preset is named so it can't be confused with 30 días.
+const MONTH_NAME = new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(new Date());
 const PRESETS = [
-  { key: '7', label: '7 días' },
-  { key: '30', label: '30 días' },
-  { key: '90', label: '90 días' },
-  { key: 'mes', label: 'Este mes' },
+  { key: '7', label: 'Últimos 7 días' },
+  { key: '30', label: 'Últimos 30 días' },
+  { key: '90', label: 'Últimos 90 días' },
+  { key: 'mes', label: MONTH_NAME.charAt(0).toUpperCase() + MONTH_NAME.slice(1), hint: `Desde el 1 de ${MONTH_NAME} hasta hoy` },
 ];
 
 const PAYMENT_LABELS: Record<string, string> = { CARD: 'Tarjeta', PSE: 'PSE' };
@@ -372,6 +374,7 @@ function Dashboard() {
                     key={p.key}
                     type="button"
                     aria-pressed={preset === p.key}
+                    title={'hint' in p ? p.hint : undefined}
                     onClick={() => choosePreset(p.key)}
                     className={cn(pillClass, preset === p.key ? 'bg-[var(--color-secondary)] text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-on-primary)]' : idleClass)}
                   >

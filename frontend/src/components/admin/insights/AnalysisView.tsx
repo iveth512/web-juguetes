@@ -663,7 +663,7 @@ export function AnalysisView() {
                     ? 'bg-[var(--color-secondary)] text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-on-primary)]'
                     : 'bg-[var(--color-bg-alt)] text-[var(--color-text)] hover:bg-[#E6E1F4] dark:hover:bg-[#1D1245]')}
                 >
-                  {n} días
+                  Últimos {n} días
                 </button>
               ))}
             </div>
