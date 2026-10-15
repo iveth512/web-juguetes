@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { getSimulatedCharge, resolveSimulatedCharge, type SimulatedCharge } from '@/lib/api';
+import { getOrderDetail, getSimulatedCharge, resolveSimulatedCharge, type SimulatedCharge } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 
 /**
@@ -18,6 +19,13 @@ function SimulatedGateway() {
   const [charge, setCharge] = useState<SimulatedCharge | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'aprobado' | 'rechazado' | null>(null);
+
+  // The charge carries only the items; the order holds the coupon and shipping lines.
+  const { data: order } = useQuery({
+    queryKey: ['order', charge?.order_id],
+    queryFn: () => getOrderDetail(charge?.order_id ?? ''),
+    enabled: Boolean(charge?.order_id),
+  });
 
   useEffect(() => {
     getSimulatedCharge(referencia)
@@ -75,6 +83,31 @@ function SimulatedGateway() {
               </li>
             ))}
           </ul>
+
+          {order && (
+            <dl className="space-y-2 pt-1 text-base">
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-text-muted)]">Subtotal</dt>
+                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(order.subtotal)}</dd>
+              </div>
+              {Number(order.discount) > 0 && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-[var(--color-text-muted)]">{order.coupon ? `Cupón ${order.coupon}` : 'Descuento'}</dt>
+                  <dd className="tabular-nums text-[var(--color-text)]">−{formatPrice(order.discount)}</dd>
+                </div>
+              )}
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-text-muted)]">Envío</dt>
+                <dd className="tabular-nums text-[var(--color-text)]">
+                  {Number(order.shipping_cost) === 0 ? 'Gratis' : formatPrice(order.shipping_cost)}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 pt-2">
+                <dt className="font-bold text-[var(--color-text)]">Total</dt>
+                <dd className="text-xl font-bold tabular-nums text-[var(--color-text)]">{formatPrice(order.total)}</dd>
+              </div>
+            </dl>
+          )}
 
           <div className="rounded-xl bg-[var(--color-bg-card)] p-4 text-sm text-[var(--color-text-muted)]">
             <p className="font-semibold text-[var(--color-text)]">Tarjeta de prueba</p>

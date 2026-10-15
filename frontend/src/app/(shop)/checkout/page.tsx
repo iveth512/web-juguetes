@@ -95,6 +95,7 @@ function CheckoutForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [quoteCity, setQuoteCity] = useState<string | null>(null);
   const [quoteError, setQuoteError] = useState('');
 
   const { data: zones } = useQuery<ShippingZone[]>({
@@ -124,6 +125,7 @@ function CheckoutForm() {
       })
         .then((q) => {
           setQuote(q);
+          setQuoteCity(form.shipping_city);
           setQuoteError('');
         })
         .catch((err: unknown) => {
@@ -193,8 +195,15 @@ function CheckoutForm() {
 
   const displaySubtotal = quote ? Number(quote.subtotal) : subtotal;
   const displayDiscount = quote ? Number(quote.discount) : 0;
-  const shippingCost = quote ? Number(quote.shipping_cost) : null;
-  const total = quote ? Number(quote.total) : null;
+  const quotedShipping = quote ? Number(quote.shipping_cost) : null;
+  // Without a city the backend quotes the fallback zone; free shipping is the only certain value then.
+  const cityPending = !form.shipping_city.trim() && quotedShipping !== 0;
+  // While the quote for a newly typed city is on its way, the old shipping value would be wrong.
+  const quoteIsStale = quoteCity !== null && quoteCity.trim() !== form.shipping_city.trim();
+  const shippingCost = cityPending || quoteIsStale ? null : quotedShipping;
+  const total = !quote || (quoteIsStale && !cityPending)
+    ? null
+    : Number(quote.total) - (cityPending ? Number(quote.shipping_cost) : 0);
 
   if (items.length === 0) {
     return (
@@ -321,7 +330,9 @@ function CheckoutForm() {
               <div className="flex justify-between gap-4">
                 <dt className="text-[var(--color-text-muted)]">Envío</dt>
                 <dd className="text-right text-[var(--color-text)]">
-                  {shippingCost === null ? (
+                  {cityPending ? (
+                    <span className="text-[var(--color-text-muted)]">Se calcula al ingresar tu ciudad</span>
+                  ) : shippingCost === null ? (
                     <span className="text-[var(--color-text-muted)]">Calculando…</span>
                   ) : shippingCost === 0 ? (
                     <span className="font-semibold">Gratis</span>
@@ -331,7 +342,7 @@ function CheckoutForm() {
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-4 pt-3">
-                <dt className="font-bold text-[var(--color-text)]">Total</dt>
+                <dt className="font-bold text-[var(--color-text)]">{cityPending ? 'Total sin envío' : 'Total'}</dt>
                 <dd className="text-2xl font-bold tabular-nums text-[var(--color-text)]" aria-live="polite">
                   {total === null ? '—' : formatPrice(total)}
                 </dd>
