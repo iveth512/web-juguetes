@@ -52,11 +52,16 @@ body {
   /* Brand fills (orange, green) carry dark ink: white on them fails contrast. */
   --color-on-primary: #1A1A2E;
   --color-on-accent: #1A1A2E;
-  /* The studio stage: dark field used by the hero and the video showcase in both themes. */
+  /* The studio stage: dark field for header and footer, the same in both themes. */
   --color-stage: #120A2A;
   --color-stage-raised: #1D1245;
   --color-stage-text: #F4F1FF;
   --color-stage-muted: #B9B0DA;
+  /* Showcase surfaces (hero, video band) follow the theme so the toggle visibly responds. */
+  --color-showcase: #EFEBFA;
+  --color-showcase-raised: #DDD5F3;
+  --color-showcase-text: #1A1A2E;
+  --color-showcase-muted: #4D4766;
 
   /* shadcn required variables */
   --background: #FFFFFF;
@@ -113,6 +118,10 @@ body {
   --color-stage-raised: #1A1040;
   --color-stage-text: #F4F1FF;
   --color-stage-muted: #B9B0DA;
+  --color-showcase: var(--color-stage);
+  --color-showcase-raised: var(--color-stage-raised);
+  --color-showcase-text: var(--color-stage-text);
+  --color-showcase-muted: var(--color-stage-muted);
 
   /* shadcn required variables */
   --background: #0F0F1A;
@@ -170,6 +179,10 @@ body {
   --color-stage-raised: var(--color-stage-raised);
   --color-stage-text: var(--color-stage-text);
   --color-stage-muted: var(--color-stage-muted);
+  --color-showcase: var(--color-showcase);
+  --color-showcase-raised: var(--color-showcase-raised);
+  --color-showcase-text: var(--color-showcase-text);
+  --color-showcase-muted: var(--color-showcase-muted);
   --font-sans: var(--font-body);
   --font-heading: var(--font-body);
   --font-display: var(--font-display);

@@ -33,7 +33,7 @@ function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
       href={href}
       className="group block w-[62%] shrink-0 snap-start sm:w-[40%] md:w-auto"
     >
-      <div className="overflow-hidden bg-[var(--color-stage-raised)]">
+      <div className="overflow-hidden bg-[var(--color-showcase-raised)]">
       <video
         ref={ref}
         src={`${src}.mp4`}
@@ -46,7 +46,7 @@ function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
         className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
       />
       </div>
-      <span className="mt-3 block text-base font-medium text-[var(--color-stage-muted)] transition-colors group-hover:text-[var(--color-stage-text)]">
+      <span className="mt-3 block text-base font-medium text-[var(--color-showcase-muted)] transition-colors group-hover:text-[var(--color-showcase-text)]">
         {title}
       </span>
     </Link>
@@ -55,18 +55,18 @@ function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
 
 export function VideoShowcase() {
   return (
-    <section className="bg-[var(--color-stage)] py-16 text-[var(--color-stage-text)] md:py-24">
+    <section className="bg-[var(--color-showcase)] py-16 text-[var(--color-showcase-text)] md:py-24">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
           <div className="max-w-xl">
             <h2 className="type-section">Así llegan a tu casa</h2>
-            <p className="mt-3 text-base text-[var(--color-stage-muted)]">
+            <p className="mt-3 text-base text-[var(--color-showcase-muted)]">
               Cada pieza grabada en nuestro estudio, tal como llega a tu casa.
             </p>
           </div>
           <Link
             href="/productos"
-            className="inline-flex min-h-11 items-center text-base font-semibold underline decoration-[var(--color-accent)] decoration-2 underline-offset-[6px] hover:text-[var(--color-accent)]"
+            className="inline-flex min-h-11 items-center text-base font-semibold underline decoration-[var(--color-primary)] decoration-2 underline-offset-[6px] hover:text-[var(--color-primary-text)]"
           >
             Ver catálogo
           </Link>

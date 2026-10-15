@@ -29,7 +29,7 @@ function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & 
 
   return (
     <Link href={href} className="group block focus-visible:outline-offset-4">
-      <div className="overflow-hidden bg-[var(--color-stage-raised)]">
+      <div className="overflow-hidden bg-[var(--color-showcase-raised)]">
         <video
           ref={ref}
           src={`${src}.mp4`}
@@ -42,7 +42,7 @@ function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & 
           className="aspect-[9/16] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
       </div>
-      <span className="mt-3 block text-sm font-medium text-[var(--color-stage-muted)] transition-colors group-hover:text-[var(--color-stage-text)]">
+      <span className="mt-3 block text-sm font-medium text-[var(--color-showcase-muted)] transition-colors group-hover:text-[var(--color-showcase-text)]">
         {title}
       </span>
     </Link>
@@ -51,11 +51,11 @@ function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & 
 
 export function HeroBanner() {
   return (
-    <section className="bg-[var(--color-stage)] text-[var(--color-stage-text)]">
+    <section className="bg-[var(--color-showcase)] text-[var(--color-showcase-text)] transition-colors duration-300">
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-10 md:pb-20 md:pt-16 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-12">
         <div>
           <h1 className="type-hero">Míralo antes de tenerlo</h1>
-          <p className="type-lead mt-6 max-w-[34ch] text-[var(--color-stage-muted)]">
+          <p className="type-lead mt-6 max-w-[34ch] text-[var(--color-showcase-muted)]">
             Funko Pop! originales con envío a toda Colombia. Grabamos nuestras piezas en
             estudio, tal como llegan a tu casa.
           </p>
@@ -68,7 +68,7 @@ export function HeroBanner() {
             </Link>
             <Link
               href="/ofertas"
-              className="inline-flex min-h-12 items-center text-base font-semibold text-[var(--color-stage-text)] underline decoration-[var(--color-accent)] decoration-2 underline-offset-[6px] transition-colors hover:text-[var(--color-accent)]"
+              className="inline-flex min-h-12 items-center text-base font-semibold text-[var(--color-showcase-text)] underline decoration-[var(--color-primary)] decoration-2 underline-offset-[6px] transition-colors hover:text-[var(--color-primary-text)]"
             >
               Ofertas de la semana
             </Link>
