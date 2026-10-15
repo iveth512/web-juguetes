@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 function OffersFallback() {
   return (
     <div>
-      <div className="h-[240px] bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] animate-pulse" />
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="grain h-[280px] bg-[var(--color-stage)]" />
+      <div className="max-w-7xl mx-auto px-4 pt-10 md:pt-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <ProductCardSkeleton key={i} />

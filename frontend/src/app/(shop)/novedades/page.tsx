@@ -11,8 +11,9 @@ export const metadata: Metadata = {
 
 function NovedadesFallback() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="h-8 w-48 bg-[var(--color-bg-alt)] rounded animate-pulse mb-8" />
+    <div className="mx-auto max-w-7xl px-4 pt-6 pb-16">
+      <div className="h-4 w-40 bg-[var(--color-bg-alt)] rounded animate-pulse mb-6" />
+      <div className="h-16 w-72 max-w-full bg-[var(--color-bg-alt)] rounded animate-pulse mb-10" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
           <ProductCardSkeleton key={i} />

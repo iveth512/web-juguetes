@@ -5,7 +5,7 @@ import { SearchContent } from './SearchContent';
 export const metadata: Metadata = {
   title: 'Buscar — Juguetes para Frikis',
   description:
-    'Busca juguetes, figuras, coleccionables y mas en nuestro catalogo.',
+    'Busca Funko Pop! originales por personaje, franquicia o nombre en nuestro catálogo.',
 };
 
 export default function BuscarPage() {

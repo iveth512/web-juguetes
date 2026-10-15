@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Categorias — Juguetes para Frikis',
+  title: 'Categorías — Juguetes para Frikis',
   description:
-    'Explora todas las categorias de coleccionables: Funko Pop, Figuras de Accion, Peluches, TCG, Estatuas y Accesorios.',
+    'Explora las categorías de coleccionables originales de Juguetes para Frikis.',
 };
 
 export default function CategoriasLayout({

@@ -4,7 +4,7 @@ import { CatalogContent } from './CatalogContent';
 import { ProductCardSkeleton } from '@/components/product/ProductCard';
 
 export const metadata: Metadata = {
-  title: 'Todos los Productos — Juguetes para Frikis',
+  title: 'Catálogo — Juguetes para Frikis',
   description:
     'Explora nuestro catálogo completo de Funko Pop! originales. Filtra por franquicia, marca y precio.',
 };
@@ -12,13 +12,12 @@ export const metadata: Metadata = {
 function CatalogFallback() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Breadcrumb skeleton */}
       <div className="h-4 w-48 bg-[var(--color-bg-alt)] rounded animate-pulse mb-6" />
+      <div className="h-16 w-72 max-w-full bg-[var(--color-bg-alt)] rounded animate-pulse mb-10" />
 
       <div className="flex gap-6">
-        {/* Sidebar skeleton */}
         <div className="hidden lg:block w-[260px] shrink-0">
-          <div className="bg-[var(--color-bg-card)] rounded-lg p-4 space-y-4">
+          <div className="space-y-6">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="space-y-2">
                 <div className="h-4 w-24 bg-[var(--color-bg-alt)] rounded animate-pulse" />
@@ -29,7 +28,6 @@ function CatalogFallback() {
           </div>
         </div>
 
-        {/* Grid skeleton */}
         <div className="flex-1">
           <div className="h-10 w-full bg-[var(--color-bg-alt)] rounded animate-pulse mb-4" />
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">

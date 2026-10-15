@@ -17,7 +17,7 @@ const SORT_OPTIONS = [
   { label: 'Relevancia', value: 'relevance' },
   { label: 'Precio: menor a mayor', value: 'price' },
   { label: 'Precio: mayor a menor', value: '-price' },
-  { label: 'Mas recientes', value: '-created_at' },
+  { label: 'Más recientes', value: '-created_at' },
 ];
 
 const DEFAULT_PAGE_SIZE = 24;
@@ -43,9 +43,10 @@ export function SearchContent() {
     [inputValue, router]
   );
 
+  const rawResults = data?.results;
   const sortedResults = useMemo(() => {
-    if (!data?.results) return [];
-    const results = [...data.results];
+    if (!rawResults) return [];
+    const results = [...rawResults];
     if (sort === 'price') {
       results.sort((a, b) => parseFloat(a.base_price) - parseFloat(b.base_price));
     } else if (sort === '-price') {
@@ -57,7 +58,7 @@ export function SearchContent() {
       );
     }
     return results;
-  }, [data?.results, sort]);
+  }, [rawResults, sort]);
 
   const totalCount = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / DEFAULT_PAGE_SIZE));
@@ -88,122 +89,119 @@ export function SearchContent() {
     return pages;
   }, [totalPages, pageParam]);
 
+  const hasQuery = query.length >= 2;
+
+  const franchiseSuggestions = franchises.length > 0 && (
+    <div className="mt-6">
+      <p className="text-base text-[var(--color-text-muted)]">Prueba con una franquicia:</p>
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {franchises.slice(0, 10).map((franchise) => (
+          <li key={franchise.id}>
+            <Link
+              href={`/productos?franchise=${franchise.slug}`}
+              className="inline-flex items-center min-h-11 px-4 text-sm font-medium bg-[var(--color-bg-alt)] text-[var(--color-text)] rounded-full hover:bg-[var(--color-border)] transition-colors"
+            >
+              {franchise.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
   return (
-    <div>
-      {/* Search header */}
-      <div className="bg-[var(--color-bg-alt)] py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          {query ? (
-            <>
-              <h1 className="font-heading font-extrabold text-2xl text-[var(--color-text)] mb-1">
-                Resultados para{' '}
-                <span className="text-[var(--color-primary)]">
-                  &ldquo;{query}&rdquo;
-                </span>
-              </h1>
-              <p className="text-sm text-[var(--color-text-muted)] mb-4">
-                {totalCount} productos encontrados
-              </p>
-            </>
-          ) : (
-            <h1 className="font-heading font-extrabold text-2xl text-[var(--color-text)] mb-4">
-              Buscar productos
-            </h1>
-          )}
+    <div className="max-w-7xl mx-auto px-4 pt-6 pb-16 md:pb-24">
+      <nav
+        aria-label="Ruta de navegación"
+        className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]"
+      >
+        <Link href="/" className="hover:text-[var(--color-primary-text)] transition-colors">
+          Inicio
+        </Link>
+        <ChevronRight strokeWidth={1.75} className="w-3.5 h-3.5" aria-hidden="true" />
+        <span className="text-[var(--color-text)] font-medium" aria-current="page">
+          Buscar
+        </span>
+      </nav>
 
-          <form onSubmit={handleSearch} className="max-w-xl">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Buscar juguetes, figuras, coleccionables..."
-                className="w-full pl-12 pr-4 py-3.5 text-base border border-[var(--color-border)] rounded-xl bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-[var(--color-primary)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors"
-              >
-                Buscar
-              </button>
-            </div>
-          </form>
+      <header className="mt-6 mb-10 md:mb-12">
+        <h1 className="type-page text-[var(--color-text)]">Buscar</h1>
+
+        <form onSubmit={handleSearch} role="search" className="mt-6 max-w-2xl">
+          <div className="relative">
+            <Search
+              strokeWidth={1.75}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Personaje, franquicia o número de figura"
+              aria-label="Buscar productos"
+              className="w-full min-h-14 pl-12 pr-28 text-base border border-[var(--color-border)] rounded-full bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-11 px-5 rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] text-sm font-semibold hover:bg-[var(--color-primary-hover)] transition-colors"
+            >
+              Buscar
+            </button>
+          </div>
+        </form>
+
+        {hasQuery && !isLoading && !isError && (
+          <p className="mt-4 text-base text-[var(--color-text-muted)] tabular-nums" aria-live="polite">
+            {totalCount === 1 ? '1 resultado' : `${totalCount} resultados`} para &ldquo;{query}
+            &rdquo;
+          </p>
+        )}
+      </header>
+
+      {!hasQuery ? (
+        <div className="max-w-[60ch]">
+          <h2 className="text-2xl font-semibold text-[var(--color-text)]">
+            Escribe al menos 2 letras para buscar
+          </h2>
+          {franchiseSuggestions}
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* No query state */}
-        {!query || query.length < 2 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Search className="w-16 h-16 text-[var(--color-text-muted)] mb-4 opacity-40" />
-            <h3 className="font-heading font-semibold text-lg text-[var(--color-text)] mb-2">
-              Escribe al menos 2 caracteres para buscar
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-6">
-              Explora nuestras franquicias populares
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {franchises.slice(0, 8).map((franchise) => (
-                <Link
-                  key={franchise.id}
-                  href={`/productos?franchise=${franchise.slug}`}
-                  className="px-3 py-1.5 text-sm font-medium bg-[var(--color-bg-alt)] text-[var(--color-text)] rounded-full border border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
-                >
-                  {franchise.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        ) : isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : isError ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <PackageSearch className="w-16 h-16 text-[var(--color-text-muted)] mb-4" />
-            <h3 className="font-heading font-semibold text-lg text-[var(--color-text)] mb-2">
-              Error al buscar
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              Ocurrio un problema. Intenta de nuevo.
-            </p>
-          </div>
-        ) : sortedResults.length === 0 ? (
-          /* Empty state */
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Search className="w-16 h-16 text-[var(--color-text-muted)] mb-4 opacity-40" />
-            <h3 className="font-heading font-semibold text-lg text-[var(--color-text)] mb-2">
-              No encontramos resultados para &ldquo;{query}&rdquo;
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-6">
-              Intenta con otro término o explora nuestras franquicias
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {franchises.slice(0, 8).map((franchise) => (
-                <Link
-                  key={franchise.id}
-                  href={`/productos?franchise=${franchise.slug}`}
-                  className="px-3 py-1.5 text-sm font-medium bg-[var(--color-bg-alt)] text-[var(--color-text)] rounded-full border border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
-                >
-                  {franchise.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Sort toolbar */}
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {totalCount} resultados
-              </p>
+      ) : isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-start py-12 max-w-[52ch]">
+          <PackageSearch strokeWidth={1.75} className="w-8 h-8 text-[var(--color-error)] mb-4" />
+          <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
+            No pudimos completar la búsqueda
+          </h2>
+          <p className="text-base leading-relaxed text-[var(--color-text-muted)]">
+            Revisa tu conexión y vuelve a intentarlo.
+          </p>
+        </div>
+      ) : sortedResults.length === 0 ? (
+        <div className="max-w-[60ch]">
+          <h2 className="text-2xl font-semibold text-[var(--color-text)]">
+            Sin resultados para &ldquo;{query}&rdquo;
+          </h2>
+          <p className="mt-2 text-base leading-relaxed text-[var(--color-text-muted)]">
+            Revisa la ortografía o usa un término más general, como el nombre de la saga.
+          </p>
+          {franchiseSuggestions}
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-end mb-6">
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+              <span className="hidden sm:inline">Ordenar por</span>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                aria-label="Ordenar resultados"
+                className="min-h-11 px-3 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -211,69 +209,62 @@ export function SearchContent() {
                   </option>
                 ))}
               </select>
-            </div>
+            </label>
+          </div>
 
-            {/* Results grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {sortedResults.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-10">
+            {sortedResults.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <nav
-                className="flex items-center justify-center gap-1 mt-8"
-                aria-label="Paginacion"
+          {totalPages > 1 && (
+            <nav className="flex items-center justify-center gap-1 mt-12" aria-label="Paginación">
+              <button
+                type="button"
+                disabled={pageParam <= 1}
+                onClick={() => goToPage(pageParam - 1)}
+                className="flex items-center justify-center w-11 h-11 rounded-full text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Página anterior"
               >
-                <button
-                  type="button"
-                  disabled={pageParam <= 1}
-                  onClick={() => goToPage(pageParam - 1)}
-                  className="p-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Pagina anterior"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
+                <ChevronLeft strokeWidth={1.75} className="w-5 h-5" />
+              </button>
 
-                {pageNumbers.map((p, i) =>
-                  p === 'ellipsis' ? (
-                    <span
-                      key={`ellipsis-${i}`}
-                      className="px-2 text-sm text-[var(--color-text-muted)]"
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => goToPage(p)}
-                      className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
-                        p === pageParam
-                          ? 'bg-[var(--color-primary)] text-white'
-                          : 'border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  )
-                )}
+              {pageNumbers.map((p, i) =>
+                p === 'ellipsis' ? (
+                  <span key={`ellipsis-${i}`} className="px-2 text-sm text-[var(--color-text-muted)]">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => goToPage(p)}
+                    aria-current={p === pageParam ? 'page' : undefined}
+                    className={`min-w-11 h-11 rounded-full text-sm font-semibold tabular-nums transition-colors ${
+                      p === pageParam
+                        ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
+                        : 'text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
 
-                <button
-                  type="button"
-                  disabled={pageParam >= totalPages}
-                  onClick={() => goToPage(pageParam + 1)}
-                  className="p-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Pagina siguiente"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </nav>
-            )}
-          </>
-        )}
-      </div>
+              <button
+                type="button"
+                disabled={pageParam >= totalPages}
+                onClick={() => goToPage(pageParam + 1)}
+                className="flex items-center justify-center w-11 h-11 rounded-full text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Página siguiente"
+              >
+                <ChevronRight strokeWidth={1.75} className="w-5 h-5" />
+              </button>
+            </nav>
+          )}
+        </>
+      )}
     </div>
   );
 }

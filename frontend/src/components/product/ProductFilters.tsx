@@ -1,10 +1,20 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { ChevronDown, ChevronUp, X, Search } from 'lucide-react';
+import { useState, useMemo, useCallback, useId } from 'react';
+import { ChevronDown, X, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/utils';
 import type { Franchise, Brand } from '@/types/product';
+
+const FRANCHISE_PREVIEW_COUNT = 8;
+
+const fieldClass =
+  'w-full min-h-11 lg:min-h-10 px-3 text-base lg:text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]';
+
+const optionRowClass =
+  'flex items-center gap-3 min-h-11 lg:min-h-9 text-base lg:text-sm text-[var(--color-text)] cursor-pointer rounded-md px-1 -mx-1 hover:bg-[var(--color-bg-alt)] transition-colors';
+
+const checkboxClass = 'w-4 h-4 shrink-0 accent-[var(--color-primary)]';
 
 interface FilterSection {
   title: string;
@@ -16,17 +26,21 @@ function CollapsibleSection({ title, defaultOpen = true, children }: FilterSecti
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-[var(--color-border)] pb-4 mb-4 last:border-b-0 last:mb-0">
+    <section className="py-3 first:pt-0">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full text-sm font-semibold text-[var(--color-text)] mb-2"
+        aria-expanded={open}
+        className="flex items-center justify-between w-full min-h-11 text-base font-semibold text-[var(--color-text)]"
       >
         {title}
-        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <ChevronDown
+          strokeWidth={1.75}
+          className={cn('w-4 h-4 transition-transform', open && 'rotate-180')}
+        />
       </button>
-      {open && children}
-    </div>
+      {open && <div className="mt-1">{children}</div>}
+    </section>
   );
 }
 
@@ -58,12 +72,27 @@ export function ProductFilters({
   className,
 }: ProductFiltersProps) {
   const [franchiseSearch, setFranchiseSearch] = useState('');
+  const [showAllFranchises, setShowAllFranchises] = useState(false);
+  const availabilityName = useId();
 
   const filteredFranchises = useMemo(() => {
     if (!franchiseSearch.trim()) return franchises;
     const q = franchiseSearch.toLowerCase();
     return franchises.filter((f) => f.name.toLowerCase().includes(q));
   }, [franchises, franchiseSearch]);
+
+  // Selected franchises stay visible even when the list is collapsed.
+  const visibleFranchises = useMemo(() => {
+    if (showAllFranchises || franchiseSearch.trim()) return filteredFranchises;
+    const head = filteredFranchises.slice(0, FRANCHISE_PREVIEW_COUNT);
+    const selectedTail = filteredFranchises
+      .slice(FRANCHISE_PREVIEW_COUNT)
+      .filter((f) => filters.franchise.includes(f.slug));
+    return [...head, ...selectedTail];
+  }, [filteredFranchises, showAllFranchises, franchiseSearch, filters.franchise]);
+
+  const canToggleFranchises =
+    !franchiseSearch.trim() && filteredFranchises.length > FRANCHISE_PREVIEW_COUNT;
 
   const handleCheckbox = useCallback(
     (key: 'franchise' | 'brand', slug: string, checked: boolean) => {
@@ -76,7 +105,6 @@ export function ProductFilters({
 
   const handlePriceChange = useCallback(
     (field: 'min_price' | 'max_price', value: string) => {
-      // Only allow digits
       const sanitized = value.replace(/\D/g, '');
       onFilterChange({ [field]: sanitized, page: 1 });
     },
@@ -84,120 +112,133 @@ export function ProductFilters({
   );
 
   return (
-    <div className={cn('bg-[var(--color-bg-card)] rounded-lg p-4', className)}>
-      {/* Franchises */}
-      <CollapsibleSection title="Franquicia">
-        <div className="relative mb-2">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-          <input
-            type="text"
-            placeholder="Buscar franquicia..."
-            value={franchiseSearch}
-            onChange={(e) => setFranchiseSearch(e.target.value)}
-            className="w-full pl-7 pr-2 py-1.5 text-xs border border-[var(--color-border)] rounded bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-          />
-        </div>
-        <div className="space-y-1.5 max-h-48 overflow-y-auto">
-          {filteredFranchises.map((f) => (
-            <label
-              key={f.id}
-              className="flex items-center gap-2 text-sm text-[var(--color-text)] cursor-pointer hover:text-[var(--color-primary)]"
+    <div className={cn('flex flex-col', className)}>
+      {franchises.length > 1 && (
+        <CollapsibleSection title="Franquicia">
+          <div className="relative mb-2">
+            <Search
+              strokeWidth={1.75}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]"
+            />
+            <input
+              type="search"
+              placeholder="Buscar franquicia"
+              aria-label="Buscar franquicia"
+              value={franchiseSearch}
+              onChange={(e) => setFranchiseSearch(e.target.value)}
+              className={cn(fieldClass, 'pl-9')}
+            />
+          </div>
+          <div className="flex flex-col">
+            {visibleFranchises.map((f) => (
+              <label key={f.id} className={optionRowClass}>
+                <input
+                  type="checkbox"
+                  checked={filters.franchise.includes(f.slug)}
+                  onChange={(e) => handleCheckbox('franchise', f.slug, e.target.checked)}
+                  className={checkboxClass}
+                />
+                <span className="flex-1 truncate">{f.name}</span>
+              </label>
+            ))}
+            {filteredFranchises.length === 0 && (
+              <p className="py-2 text-sm text-[var(--color-text-muted)]">
+                Ninguna franquicia coincide con tu búsqueda.
+              </p>
+            )}
+          </div>
+          {canToggleFranchises && (
+            <button
+              type="button"
+              onClick={() => setShowAllFranchises((v) => !v)}
+              aria-expanded={showAllFranchises}
+              className="mt-1 min-h-11 lg:min-h-9 text-sm font-semibold text-[var(--color-primary-text)] hover:underline underline-offset-4"
             >
-              <input
-                type="checkbox"
-                checked={filters.franchise.includes(f.slug)}
-                onChange={(e) => handleCheckbox('franchise', f.slug, e.target.checked)}
-                className="rounded border-[var(--color-border)] text-[var(--color-primary)] accent-[var(--color-primary)]"
-              />
-              <span className="flex-1 truncate">{f.name}</span>
-            </label>
-          ))}
-          {filteredFranchises.length === 0 && (
-            <p className="text-xs text-[var(--color-text-muted)]">Sin resultados</p>
+              {showAllFranchises ? 'Ver menos' : `Ver todas (${filteredFranchises.length})`}
+            </button>
           )}
-        </div>
-      </CollapsibleSection>
+        </CollapsibleSection>
+      )}
 
-      {/* Brands */}
-      <CollapsibleSection title="Marca">
-        <div className="space-y-1.5 max-h-48 overflow-y-auto">
-          {brands.map((b) => (
-            <label
-              key={b.id}
-              className="flex items-center gap-2 text-sm text-[var(--color-text)] cursor-pointer hover:text-[var(--color-primary)]"
-            >
-              <input
-                type="checkbox"
-                checked={filters.brand.includes(b.slug)}
-                onChange={(e) => handleCheckbox('brand', b.slug, e.target.checked)}
-                className="rounded border-[var(--color-border)] text-[var(--color-primary)] accent-[var(--color-primary)]"
-              />
-              <span className="flex-1 truncate">{b.name}</span>
-            </label>
-          ))}
-          {brands.length === 0 && (
-            <p className="text-xs text-[var(--color-text-muted)]">Sin marcas</p>
-          )}
-        </div>
-      </CollapsibleSection>
+      {brands.length > 1 && (
+        <CollapsibleSection title="Marca">
+          <div className="flex flex-col">
+            {brands.map((b) => (
+              <label key={b.id} className={optionRowClass}>
+                <input
+                  type="checkbox"
+                  checked={filters.brand.includes(b.slug)}
+                  onChange={(e) => handleCheckbox('brand', b.slug, e.target.checked)}
+                  className={checkboxClass}
+                />
+                <span className="flex-1 truncate">{b.name}</span>
+              </label>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
 
-      {/* Price range */}
       <CollapsibleSection title="Precio (COP)">
         <div className="flex items-center gap-2">
           <input
             type="text"
             inputMode="numeric"
-            placeholder="Min"
+            placeholder="Mínimo"
+            aria-label="Precio mínimo"
             value={filters.min_price}
             onChange={(e) => handlePriceChange('min_price', e.target.value)}
-            className="w-full px-2 py-1.5 text-xs border border-[var(--color-border)] rounded bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+            className={fieldClass}
           />
-          <span className="text-xs text-[var(--color-text-muted)] shrink-0">—</span>
+          <span className="text-sm text-[var(--color-text-muted)] shrink-0" aria-hidden="true">
+            a
+          </span>
           <input
             type="text"
             inputMode="numeric"
-            placeholder="Max"
+            placeholder="Máximo"
+            aria-label="Precio máximo"
             value={filters.max_price}
             onChange={(e) => handlePriceChange('max_price', e.target.value)}
-            className="w-full px-2 py-1.5 text-xs border border-[var(--color-border)] rounded bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+            className={fieldClass}
           />
         </div>
         {(filters.min_price || filters.max_price) && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-1.5">
-            {filters.min_price ? formatPrice(filters.min_price) : '$0'} — {filters.max_price ? formatPrice(filters.max_price) : '...'}
+          <p className="text-sm text-[var(--color-text-muted)] mt-2 tabular-nums">
+            {filters.min_price ? formatPrice(filters.min_price) : '$0'} a{' '}
+            {filters.max_price ? formatPrice(filters.max_price) : 'sin límite'}
           </p>
         )}
       </CollapsibleSection>
 
-      {/* Availability */}
       <CollapsibleSection title="Disponibilidad">
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text)] cursor-pointer hover:text-[var(--color-primary)]">
+        <div className="flex flex-col" role="radiogroup" aria-label="Disponibilidad">
+          <label className={optionRowClass}>
             <input
-              type="checkbox"
-              checked={filters.in_stock}
-              onChange={(e) => onFilterChange({ in_stock: e.target.checked, page: 1 })}
-              className="rounded border-[var(--color-border)] text-[var(--color-primary)] accent-[var(--color-primary)]"
-            />
-            <span>En stock</span>
-          </label>
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text)] cursor-pointer hover:text-[var(--color-primary)]">
-            <input
-              type="checkbox"
+              type="radio"
+              name={availabilityName}
               checked={!filters.in_stock}
-              onChange={(e) => onFilterChange({ in_stock: !e.target.checked, page: 1 })}
-              className="rounded border-[var(--color-border)] text-[var(--color-primary)] accent-[var(--color-primary)]"
+              onChange={() => onFilterChange({ in_stock: false, page: 1 })}
+              className={checkboxClass}
             />
-            <span>Incluir agotados</span>
+            <span>Todos, incluidos agotados</span>
+          </label>
+          <label className={optionRowClass}>
+            <input
+              type="radio"
+              name={availabilityName}
+              checked={filters.in_stock}
+              onChange={() => onFilterChange({ in_stock: true, page: 1 })}
+              className={checkboxClass}
+            />
+            <span>Solo disponibles</span>
           </label>
         </div>
       </CollapsibleSection>
 
-      {/* Clear all */}
       <button
         type="button"
         onClick={onClearAll}
-        className="w-full mt-2 py-2 text-sm font-medium text-[var(--color-primary)] border border-[var(--color-primary)] rounded hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+        className="mt-4 min-h-11 w-full rounded-full bg-[var(--color-bg-alt)] text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-colors"
       >
         Limpiar filtros
       </button>
@@ -205,7 +246,6 @@ export function ProductFilters({
   );
 }
 
-/* Active filter chips */
 interface ActiveFiltersProps {
   filters: FilterValues;
   franchises: Franchise[];
@@ -232,39 +272,35 @@ export function ActiveFilterChips({
     chips.push({ label: br?.name || slug, key: 'brand', value: slug });
   });
   if (filters.min_price) {
-    chips.push({ label: `Min: ${formatPrice(filters.min_price)}`, key: 'min_price' });
+    chips.push({ label: `Desde ${formatPrice(filters.min_price)}`, key: 'min_price' });
   }
   if (filters.max_price) {
-    chips.push({ label: `Max: ${formatPrice(filters.max_price)}`, key: 'max_price' });
+    chips.push({ label: `Hasta ${formatPrice(filters.max_price)}`, key: 'max_price' });
   }
   if (filters.in_stock) {
-    chips.push({ label: 'En stock', key: 'in_stock' });
+    chips.push({ label: 'Solo disponibles', key: 'in_stock' });
   }
 
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
+    <div className="flex flex-wrap items-center gap-2 mb-6">
       {chips.map((chip, i) => (
-        <span
+        <button
           key={`${chip.key}-${chip.value || i}`}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-[var(--color-bg-alt)] text-[var(--color-text)] rounded-full border border-[var(--color-border)]"
+          type="button"
+          onClick={() => onRemove(chip.key, chip.value)}
+          aria-label={`Quitar filtro ${chip.label}`}
+          className="inline-flex items-center gap-1.5 min-h-11 lg:min-h-9 pl-4 pr-3 text-sm font-medium bg-[var(--color-bg-alt)] text-[var(--color-text)] rounded-full hover:bg-[var(--color-border)] transition-colors"
         >
           {chip.label}
-          <button
-            type="button"
-            onClick={() => onRemove(chip.key, chip.value)}
-            className="hover:text-[var(--color-error)] transition-colors"
-            aria-label={`Quitar filtro ${chip.label}`}
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </span>
+          <X strokeWidth={1.75} className="w-4 h-4" />
+        </button>
       ))}
       <button
         type="button"
         onClick={onClearAll}
-        className="text-xs text-[var(--color-primary)] hover:underline font-medium"
+        className="min-h-11 lg:min-h-9 px-2 text-sm font-semibold text-[var(--color-primary-text)] hover:underline underline-offset-4"
       >
         Limpiar todos
       </button>

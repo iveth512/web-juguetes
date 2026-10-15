@@ -13,11 +13,12 @@ import { ProductCard, ProductCardSkeleton } from '@/components/product/ProductCa
 import { formatPrice } from '@/lib/utils';
 import type { ProductListItem } from '@/types/product';
 
+// Ranges are (min, max] so a 15% product falls in exactly one tier.
 const DISCOUNT_TIERS = [
-  { label: 'Todas las ofertas', min: 0, max: 100 },
-  { label: 'Hasta 15%', min: 0, max: 15 },
-  { label: '15% - 25%', min: 15, max: 25 },
-  { label: '25% - 40%', min: 25, max: 40 },
+  { label: 'Todas', min: -1, max: 100 },
+  { label: 'Hasta 15%', min: -1, max: 15 },
+  { label: '16% a 25%', min: 15, max: 25 },
+  { label: '26% a 40%', min: 25, max: 40 },
   { label: 'Más de 40%', min: 40, max: 100 },
 ];
 
@@ -25,7 +26,7 @@ const SORT_OPTIONS = [
   { label: 'Mayor descuento', value: '-discount' },
   { label: 'Precio: menor a mayor', value: 'price' },
   { label: 'Precio: mayor a menor', value: '-price' },
-  { label: 'Mas recientes', value: '-created_at' },
+  { label: 'Más recientes', value: '-created_at' },
 ];
 
 const ITEMS_PER_PAGE = 24;
@@ -41,33 +42,41 @@ function formatCountdown(diff: number) {
 
 function BigCountdownTimer() {
   const remaining = useOffersCountdown(1000);
-
-  if (remaining === null) {
-    return <div className="flex gap-4 justify-center" />;
-  }
-
-  const timeLeft = formatCountdown(remaining);
+  const timeLeft = formatCountdown(remaining ?? 0);
+  const units = [
+    { value: timeLeft.days, label: 'días' },
+    { value: timeLeft.hours, label: 'horas' },
+    { value: timeLeft.minutes, label: 'min' },
+    { value: timeLeft.seconds, label: 'seg' },
+  ];
 
   return (
-    <div className="flex gap-3 sm:gap-4 justify-center">
-      {[
-        { value: timeLeft.days, label: 'Días' },
-        { value: timeLeft.hours, label: 'Horas' },
-        { value: timeLeft.minutes, label: 'Min' },
-        { value: timeLeft.seconds, label: 'Seg' },
-      ].map((unit) => (
-        <div
-          key={unit.label}
-          className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 sm:px-6 sm:py-4 min-w-[64px] sm:min-w-[80px]"
-        >
-          <span className="font-heading text-2xl sm:text-4xl font-bold text-[var(--color-primary)]">
-            {String(unit.value).padStart(2, '0')}
-          </span>
-          <span className="text-[10px] sm:text-xs text-white/70 uppercase mt-0.5">
-            {unit.label}
-          </span>
-        </div>
-      ))}
+    <div>
+      <p className="text-base text-[var(--color-stage-muted)]">Terminan en</p>
+      <div
+        className="mt-2 flex gap-2 sm:gap-3"
+        role="timer"
+        aria-label={
+          remaining === null
+            ? 'Calculando tiempo restante'
+            : `${timeLeft.days} días, ${timeLeft.hours} horas y ${timeLeft.minutes} minutos`
+        }
+      >
+        {units.map((unit) => (
+          <div
+            key={unit.label}
+            className="flex flex-col items-center rounded-xl bg-[var(--color-stage-raised)] px-3 py-3 min-w-[68px] sm:min-w-[84px]"
+          >
+            <span className="type-section text-[var(--color-primary)] tabular-nums">
+              {remaining === null ? '--' : String(unit.value).padStart(2, '0')}
+            </span>
+            <span className="mt-1 text-sm text-[var(--color-stage-muted)]">{unit.label}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-sm text-[var(--color-stage-muted)]">
+        El domingo a las 11:59 p. m., hora de Colombia.
+      </p>
     </div>
   );
 }
@@ -89,11 +98,9 @@ export function OffersContent() {
     const tier = DISCOUNT_TIERS[activeTier];
     const products = allProducts.filter((p) => {
       const pct = p.sale_percentage ?? 0;
-      if (activeTier === 0) return true;
-      return pct >= tier.min && pct <= tier.max;
+      return pct > tier.min && pct <= tier.max;
     });
 
-    // Sort
     if (sort === '-discount') {
       products.sort((a, b) => (b.sale_percentage ?? 0) - (a.sale_percentage ?? 0));
     } else if (sort === 'price') {
@@ -109,6 +116,19 @@ export function OffersContent() {
 
     return products;
   }, [allProducts, activeTier, sort]);
+
+  const availableTiers = useMemo(
+    () =>
+      DISCOUNT_TIERS.map((tier, index) => ({ ...tier, index })).filter(
+        (tier) =>
+          tier.index === 0 ||
+          allProducts.some((p) => {
+            const pct = p.sale_percentage ?? 0;
+            return pct > tier.min && pct <= tier.max;
+          })
+      ),
+    [allProducts]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
   const paginatedProducts = filteredProducts.slice(
@@ -133,130 +153,142 @@ export function OffersContent() {
   }, [totalPages, page]);
 
   return (
-    <div>
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] py-10 sm:py-14">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <span className="inline-block bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
-            Solo esta semana
-          </span>
-          <h1 className="font-heading font-extrabold text-[32px] sm:text-[40px] text-white mb-3">
-            Ofertas de la semana
-          </h1>
-          <p className="text-white/80 text-sm sm:text-base max-w-lg mx-auto mb-6">
-            Funko Pop! originales con descuento por tiempo limitado. Aprovecha antes de que se agoten.
-          </p>
-          <BigCountdownTimer />
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] mb-6">
-          <Link
-            href="/"
-            className="hover:text-[var(--color-primary)] transition-colors"
+    <div className="pb-16 md:pb-24">
+      <section className="grain bg-[var(--color-stage)] text-[var(--color-stage-text)]">
+        <div className="max-w-7xl mx-auto px-4 pt-6 pb-12 md:pb-16">
+          <nav
+            aria-label="Ruta de navegación"
+            className="flex items-center gap-1.5 text-sm text-[var(--color-stage-muted)]"
           >
-            Inicio
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-[var(--color-text)] font-medium">Ofertas de la semana</span>
-        </nav>
+            <Link href="/" className="hover:text-[var(--color-stage-text)] transition-colors">
+              Inicio
+            </Link>
+            <ChevronRight strokeWidth={1.75} className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="text-[var(--color-stage-text)] font-medium" aria-current="page">
+              Ofertas
+            </span>
+          </nav>
 
-        {/* Discount tier chips */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {DISCOUNT_TIERS.map((tier, i) => (
-            <button
-              key={tier.label}
-              type="button"
-              onClick={() => {
-                setActiveTier(i);
+          <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div>
+              <h1 className="type-page">Ofertas de la semana</h1>
+              <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-[var(--color-stage-text)]">
+                Funko Pop! originales con descuento hasta el domingo. Las unidades son limitadas y
+                el precio vuelve a la normalidad cuando termina la semana.
+              </p>
+            </div>
+            <BigCountdownTimer />
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 pt-10 md:pt-12">
+        <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
+          {availableTiers.length > 2 ? (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por descuento">
+              {availableTiers.map((tier) => (
+                <button
+                  key={tier.label}
+                  type="button"
+                  aria-pressed={tier.index === activeTier}
+                  onClick={() => {
+                    setActiveTier(tier.index);
+                    setPage(1);
+                  }}
+                  className={`min-h-11 px-5 text-sm font-semibold rounded-full transition-colors ${
+                    tier.index === activeTier
+                      ? 'bg-[var(--color-secondary)] text-white'
+                      : 'bg-[var(--color-bg-alt)] text-[var(--color-text)] hover:bg-[var(--color-border)]'
+                  }`}
+                >
+                  {tier.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
+
+          <div className="flex items-center justify-between gap-4 md:justify-end">
+            <p className="text-sm text-[var(--color-text-muted)] tabular-nums" aria-live="polite">
+              {isLoading
+                ? 'Cargando ofertas…'
+                : filteredProducts.length === 1
+                  ? '1 producto en oferta'
+                  : `${filteredProducts.length} productos en oferta`}
+            </p>
+            <select
+              value={sort}
+              aria-label="Ordenar ofertas"
+              onChange={(e) => {
+                setSort(e.target.value);
                 setPage(1);
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${
-                i === activeTier
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                  : 'bg-[var(--color-bg-card)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
-              }`}
+              className="min-h-11 px-3 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             >
-              {tier.label}
-            </button>
-          ))}
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-[var(--color-text-muted)]">
-            {filteredProducts.length} productos en oferta
-          </p>
-          <select
-            value={sort}
-            onChange={(e) => {
-              setSort(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Product grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
           </div>
         ) : paginatedProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Tag className="w-16 h-16 text-[var(--color-text-muted)] mb-4 opacity-40" />
-            <h3 className="font-heading font-semibold text-lg text-[var(--color-text)] mb-2">
-              No hay ofertas en este rango
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              Intenta con otro rango de descuento.
+          <div className="flex flex-col items-start py-16 max-w-[52ch]">
+            <Tag strokeWidth={1.75} className="w-8 h-8 text-[var(--color-text-muted)] mb-4" />
+            <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
+              {allProducts.length === 0
+                ? 'Esta semana no hay ofertas activas'
+                : 'No hay ofertas en este rango'}
+            </h2>
+            <p className="text-base leading-relaxed text-[var(--color-text-muted)] mb-6">
+              {allProducts.length === 0
+                ? 'Explora el catálogo completo mientras llega la próxima selección.'
+                : 'Prueba con otro rango de descuento.'}
             </p>
+            <Link
+              href="/productos"
+              className="inline-flex items-center min-h-11 px-6 rounded-full text-sm font-semibold bg-[var(--color-primary)] text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)] transition-colors"
+            >
+              Ver catálogo
+            </Link>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-10">
               {paginatedProducts.map((product) => {
                 const savings = getSavings(product);
                 return (
                   <div key={product.id} className="flex flex-col">
                     <ProductCard product={product} />
                     {savings > 0 && (
-                      <div className="mt-1 px-2">
-                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                          <Tag className="w-3 h-3" />
-                          Ahorras {formatPrice(savings)}
-                        </span>
-                      </div>
+                      <p className="mt-1 text-sm font-semibold text-[var(--color-text)] tabular-nums">
+                        Ahorras {formatPrice(savings)}
+                      </p>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <nav
-                className="flex items-center justify-center gap-1 mt-8"
-                aria-label="Paginacion"
-              >
+              <nav className="flex items-center justify-center gap-1 mt-12" aria-label="Paginación">
                 <button
                   type="button"
                   disabled={page <= 1}
                   onClick={() => setPage(page - 1)}
-                  className="p-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Pagina anterior"
+                  className="flex items-center justify-center w-11 h-11 rounded-full text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Página anterior"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft strokeWidth={1.75} className="w-5 h-5" />
                 </button>
 
                 {pageNumbers.map((p, i) =>
@@ -265,17 +297,18 @@ export function OffersContent() {
                       key={`ellipsis-${i}`}
                       className="px-2 text-sm text-[var(--color-text-muted)]"
                     >
-                      ...
+                      …
                     </span>
                   ) : (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setPage(p)}
-                      className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
+                      aria-current={p === page ? 'page' : undefined}
+                      className={`min-w-11 h-11 rounded-full text-sm font-semibold tabular-nums transition-colors ${
                         p === page
-                          ? 'bg-[var(--color-primary)] text-white'
-                          : 'border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'
+                          ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
+                          : 'text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'
                       }`}
                     >
                       {p}
@@ -287,10 +320,10 @@ export function OffersContent() {
                   type="button"
                   disabled={page >= totalPages}
                   onClick={() => setPage(page + 1)}
-                  className="p-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Pagina siguiente"
+                  className="flex items-center justify-center w-11 h-11 rounded-full text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Página siguiente"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight strokeWidth={1.75} className="w-5 h-5" />
                 </button>
               </nav>
             )}
