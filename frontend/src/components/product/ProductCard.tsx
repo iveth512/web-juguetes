@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Heart, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
@@ -15,33 +16,19 @@ interface ProductCardProps {
   product: ProductListItem;
 }
 
+// One badge per card, so a single signal reads at a glance.
 function getBadge(product: ProductListItem) {
   if (product.stock === 0) {
-    return { label: 'Agotado', className: 'bg-gray-500 text-white' };
-  }
-  if (product.stock > 0 && product.stock <= product.low_stock_threshold) {
-    return {
-      label: `Ultimas ${product.stock}`,
-      className: 'bg-[var(--color-primary)] text-white animate-pulse',
-    };
+    return { label: 'Agotado', className: 'bg-[var(--color-text)] text-[var(--color-bg)]' };
   }
   if (product.is_on_sale && product.sale_percentage) {
     return {
       label: `-${product.sale_percentage}%`,
-      className: 'bg-[var(--color-accent)] text-white',
+      className: 'bg-[var(--color-primary)] text-[var(--color-on-primary)]',
     };
   }
   if (product.is_new) {
-    return {
-      label: 'NUEVO',
-      className: 'bg-[var(--color-accent)] text-white',
-    };
-  }
-  if (product.is_featured) {
-    return {
-      label: 'TOP VENTAS',
-      className: 'bg-[var(--color-primary)] text-white',
-    };
+    return { label: 'Nuevo', className: 'bg-[var(--color-accent)] text-[var(--color-on-accent)]' };
   }
   return null;
 }
@@ -55,24 +42,19 @@ export function ProductCard({ product }: ProductCardProps) {
   const inWishlist = isInWishlist(product.id);
   const badge = getBadge(product);
   const isOutOfStock = product.stock === 0;
+  const isLowStock = !isOutOfStock && product.stock <= product.low_stock_threshold;
+  const href = `/productos/${product.slug}`;
 
-  const handleWishlistToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleWishlistToggle = () => {
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-    if (inWishlist) {
-      remove(product.id);
-    } else {
-      add(product.id);
-    }
+    if (inWishlist) remove(product.id);
+    else add(product.id);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleAddToCart = () => {
     addItem({
       productId: product.id,
       name: product.name,
@@ -85,37 +67,27 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link
-      href={`/productos/${product.slug}`}
-      className={cn(
-        'group block rounded-lg border border-[var(--color-border)]',
-        'bg-[var(--color-bg-card)] transition-all duration-300',
-        'hover:shadow-lg hover:-translate-y-1',
-        isOutOfStock && 'opacity-70'
-      )}
-    >
-      {/* Image area */}
-      <div className="relative h-[200px] bg-[var(--color-bg-alt)] rounded-t-lg overflow-hidden">
+    <article className={cn('group relative', isOutOfStock && 'opacity-70')}>
+      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-[var(--color-bg-alt)]">
         {product.primary_image_url ? (
           <Image
             src={product.primary_image_url}
-            alt={product.name}
+            alt=""
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             unoptimized
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm">
-            [Imagen]
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-[var(--color-text-muted)]">
+            Sin foto todavía
           </div>
         )}
 
-        {/* Badge */}
         {badge && (
           <span
             className={cn(
-              'absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-semibold',
+              'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[13px] font-semibold leading-none',
               badge.className
             )}
           >
@@ -123,111 +95,80 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
-        {/* Wishlist heart (top-right) */}
-        <button
-          onClick={handleWishlistToggle}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-white transition-colors z-10"
-          aria-label={inWishlist ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill={inWishlist ? "currentColor" : "none"}
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            style={{ color: inWishlist ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </button>
-
-        {/* Add to cart icon (mobile — bottom-right) */}
         {!isOutOfStock && (
           <button
+            type="button"
             onClick={handleAddToCart}
-            className="sm:hidden absolute bottom-2 right-2 p-1.5 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] transition-colors z-10 shadow-lg"
-            aria-label="Agregar al carrito"
+            className="absolute bottom-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] transition-[background-color,transform] hover:bg-[var(--color-primary-hover)] active:scale-95"
+            aria-label={`Agregar ${product.name} al carrito`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-            </svg>
-            <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-secondary)] text-white text-[9px] font-bold leading-none shadow-sm">+</span>
+            <Plus className="h-5 w-5" strokeWidth={2} />
           </button>
-        )}
-
-        {/* Add to cart overlay (desktop only) */}
-        {!isOutOfStock && (
-          <div
-            className={cn(
-              'absolute bottom-0 left-0 right-0',
-              'hidden sm:block',
-              'sm:translate-y-full sm:group-hover:translate-y-0',
-              'transition-transform duration-300'
-            )}
-          >
-            <button
-              onClick={handleAddToCart}
-              className="block w-full bg-[var(--color-primary)] text-white text-center text-sm font-semibold py-2 hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer"
-            >
-              Agregar al carrito
-            </button>
-          </div>
         )}
       </div>
 
-      {/* Body */}
-      <div className="p-3">
-        {/* Franchise */}
-        <p className="text-[11px] text-[var(--color-text-muted)] mb-0.5">
-          {product.franchise}
-        </p>
-
-        {/* Product name */}
-        <h3 className="text-[13px] font-semibold text-[var(--color-text)] leading-tight line-clamp-2 mb-2">
-          {product.name}
+      <div className="pt-3">
+        <p className="text-[13px] text-[var(--color-text-muted)]">{product.franchise}</p>
+        <h3 className="mt-0.5 line-clamp-2 text-[15px] font-semibold leading-snug text-[var(--color-text)]">
+          {/* Stretched link: the whole card is clickable while the buttons stay real siblings. */}
+          <Link href={href} className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-4 focus-visible:after:outline-[var(--color-primary)]">
+            {product.name}
+          </Link>
         </h3>
 
-        {/* Price */}
-        <div className="flex items-baseline gap-2">
-          <span className="font-heading text-[17px] font-bold text-[var(--color-primary)]">
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
+          <span className="text-lg font-bold tabular-nums text-[var(--color-text)]">
             {formatPrice(product.base_price)}
           </span>
           {product.compare_price && (
-            <span className="text-xs text-[var(--color-text-muted)] line-through">
+            <span className="text-sm tabular-nums text-[var(--color-text-muted)] line-through">
               {formatPrice(product.compare_price)}
             </span>
           )}
         </div>
 
-        {/* Rating */}
-        <div className="flex items-center gap-1 mt-1">
-          <StarRating rating={product.average_rating || 0} size="sm" />
-          <span className="text-[11px] text-[var(--color-text-muted)]">
-            ({product.review_count || 0})
-          </span>
-        </div>
+        {(isLowStock || product.review_count > 0) && (
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--color-text-muted)]">
+            {product.review_count > 0 && (
+              <span className="flex items-center gap-1">
+                <StarRating rating={product.average_rating || 0} size="sm" />
+                <span>({product.review_count})</span>
+              </span>
+            )}
+            {isLowStock && (
+              <span className="font-medium text-[var(--color-primary-text)]">
+                {product.stock === 1 ? 'Queda 1' : `Quedan ${product.stock}`}
+              </span>
+            )}
+          </div>
+        )}
       </div>
-    </Link>
+
+      <button
+        type="button"
+        onClick={handleWishlistToggle}
+        className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-bg)]/85 text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg)]"
+        aria-label={inWishlist ? `Quitar ${product.name} de favoritos` : `Agregar ${product.name} a favoritos`}
+        aria-pressed={inWishlist}
+      >
+        <Heart
+          className={cn('h-5 w-5', inWishlist && 'fill-[var(--color-primary)] text-[var(--color-primary)]')}
+          strokeWidth={1.75}
+        />
+      </button>
+
+    </article>
   );
 }
 
 export function ProductCardSkeleton() {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] overflow-hidden">
-      <div className="h-[200px] bg-[var(--color-bg-alt)] animate-pulse" />
-      <div className="p-3 space-y-2">
-        <div className="h-3 w-16 bg-[var(--color-bg-alt)] rounded animate-pulse" />
-        <div className="h-4 w-full bg-[var(--color-bg-alt)] rounded animate-pulse" />
-        <div className="h-4 w-2/3 bg-[var(--color-bg-alt)] rounded animate-pulse" />
-        <div className="h-5 w-24 bg-[var(--color-bg-alt)] rounded animate-pulse" />
+    <div aria-hidden="true">
+      <div className="aspect-[4/5] animate-pulse rounded-xl bg-[var(--color-bg-alt)]" />
+      <div className="space-y-2 pt-3">
+        <div className="h-3 w-16 animate-pulse rounded bg-[var(--color-bg-alt)]" />
+        <div className="h-4 w-full animate-pulse rounded bg-[var(--color-bg-alt)]" />
+        <div className="h-5 w-24 animate-pulse rounded bg-[var(--color-bg-alt)]" />
       </div>
     </div>
   );

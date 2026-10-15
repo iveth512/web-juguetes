@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { Heart, Menu, Moon, Search, ShoppingBag, Sun, User } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -70,34 +71,20 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50">
         {/* Announcement bar - hidden on mobile to save space, sticky header stays visible */}
-        <div className="hidden sm:block bg-[var(--color-accent)] text-white text-xs sm:text-sm text-center py-1.5 px-4 font-medium">
-          Envio gratis en compras superiores a $250.000 COP | Todos nuestros
-          productos son 100% originales
-        </div>
+        <p className="hidden sm:block bg-[var(--color-accent)] text-[var(--color-on-accent)] text-sm text-center py-1.5 px-4 font-medium">
+          Envío gratis en compras desde $250.000. Todos nuestros Funko Pop! son originales.
+        </p>
 
         {/* Main header */}
-        <div className="bg-[var(--color-secondary)]">
+        <div className="bg-[var(--color-stage)]">
           <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-4">
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden text-white/80 hover:text-white transition-colors p-1"
-              aria-label="Abrir menu"
+              className="lg:hidden -ml-2 flex h-11 w-11 items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Abrir menú"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <Menu className="h-6 w-6" strokeWidth={1.75} />
             </button>
 
             {/* Logo */}
@@ -109,11 +96,18 @@ export function Header() {
             </div>
 
             {/* Right actions */}
-            <div className="flex items-center gap-1 sm:gap-3 ml-auto">
+            <div className="flex items-center gap-0.5 sm:gap-2 ml-auto">
+              <Link
+                href="/buscar"
+                className="lg:hidden flex h-11 w-11 items-center justify-center rounded-full text-white/75 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Buscar productos"
+              >
+                <Search className="h-5 w-5" strokeWidth={1.75} />
+              </Link>
               {/* Dark mode toggle */}
               <button
                 onClick={toggleTheme}
-                className="text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                className="flex items-center text-white/75 hover:text-white transition-colors min-h-11 min-w-11 justify-center px-2.5 rounded-full hover:bg-white/10"
                 aria-label={
                   resolvedTheme === "dark"
                     ? "Cambiar a modo claro"
@@ -121,39 +115,13 @@ export function Header() {
                 }
               >
                 {resolvedTheme === "dark" ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
+                  <Sun className="h-5 w-5" strokeWidth={1.75} />
                 ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                    />
-                  </svg>
+                  <Moon className="h-5 w-5" strokeWidth={1.75} />
                 )}
               </button>
 
-              {/* Mi Cuenta */}
+              {/* Mi cuenta */}
               {isAuthenticated ? (
                 <div
                   className="relative"
@@ -161,32 +129,19 @@ export function Header() {
                   onMouseLeave={handleUserMouseLeave}
                 >
                   <button
-                    className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 text-sm"
+                    className="flex items-center gap-1.5 text-white/75 hover:text-white transition-colors min-h-11 min-w-11 justify-center px-2.5 rounded-full hover:bg-white/10 text-sm"
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
+                    <User className="h-5 w-5" strokeWidth={1.75} />
                     <span className="hidden md:inline">
-                      Hola, {user?.first_name || 'Usuario'}
+                      Hola, {user?.first_name || 'coleccionista'}
                     </span>
                   </button>
 
                   {/* User dropdown */}
                   <div
                     className={cn(
-                      "absolute right-0 top-full mt-0 w-48 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl py-2 transition-all duration-150",
+                      "absolute right-0 top-full mt-0 w-48 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-lg py-2 transition-[opacity,transform,visibility] duration-150",
                       userDropdownOpen
                         ? "opacity-100 visible translate-y-0"
                         : "opacity-0 invisible -translate-y-1"
@@ -195,7 +150,7 @@ export function Header() {
                     {user?.is_staff && (
                       <Link
                         href="/panel/dashboard"
-                        className="block px-4 py-2 text-sm text-[var(--color-primary)] font-semibold hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                        className="block px-4 py-2 text-sm text-[var(--color-primary-text)] font-semibold hover:bg-[var(--color-bg-alt)] transition-colors"
                       >
                         Panel de administración
                       </Link>
@@ -205,69 +160,43 @@ export function Header() {
                     )}
                     <Link
                       href="/cuenta"
-                      className="block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                      className="block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] transition-colors"
                     >
-                      Mi Perfil
+                      Mi perfil
                     </Link>
                     <Link
                       href="/pedidos"
-                      className="block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                      className="block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] transition-colors"
                     >
-                      Mis Pedidos
+                      Mis pedidos
                     </Link>
                     <hr className="my-1 border-[var(--color-border)]" />
                     <button
                       onClick={() => logout()}
-                      className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                      className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] transition-colors"
                     >
-                      Cerrar sesion
+                      Cerrar sesión
                     </button>
                   </div>
                 </div>
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 text-sm"
+                  className="flex items-center gap-1.5 text-white/75 hover:text-white transition-colors min-h-11 min-w-11 justify-center px-2.5 rounded-full hover:bg-white/10 text-sm"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <span className="hidden md:inline">Mi Cuenta</span>
+                  <User className="h-5 w-5" strokeWidth={1.75} />
+                  <span className="hidden md:inline">Mi cuenta</span>
                 </Link>
               )}
 
               {/* Favoritos */}
               <Link
                 href={isAuthenticated ? "/favoritos" : "/login"}
-                className="relative flex items-center gap-1.5 text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 text-sm"
+                className="relative flex items-center gap-1.5 text-white/75 hover:text-white transition-colors min-h-11 min-w-11 justify-center px-2.5 rounded-full hover:bg-white/10 text-sm"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
+                <Heart className="h-5 w-5" strokeWidth={1.75} />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-xs font-bold">
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] text-xs font-bold">
                     {wishlistCount > 99 ? '99+' : wishlistCount}
                   </span>
                 )}
@@ -277,28 +206,15 @@ export function Header() {
               {/* Cart */}
               <Link
                 href="/carrito"
-                className="relative text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
-                aria-label="Carrito de compras"
+                className="relative flex items-center text-white/75 hover:text-white transition-colors min-h-11 min-w-11 justify-center px-2.5 rounded-full hover:bg-white/10"
+                aria-label={cartCount > 0 ? `Carrito, ${cartCount} productos` : "Carrito"}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"
-                  />
-                </svg>
+                <ShoppingBag className="h-5 w-5" strokeWidth={1.75} />
                 {cartCount > 0 && (
                   <span
                     className={cn(
-                      "absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-xs font-bold transition-transform",
-                      badgeBounce && "animate-bounce"
+                      "absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] text-xs font-bold transition-transform",
+                      badgeBounce && "scale-125"
                     )}
                   >
                     {cartCount > 99 ? '99+' : cartCount}
@@ -310,7 +226,7 @@ export function Header() {
         </div>
 
         {/* Navigation bar - desktop only */}
-        <nav className="hidden lg:block bg-[var(--color-secondary-dark)]">
+        <nav aria-label="Principal" className="hidden lg:block bg-[var(--color-stage)]">
           <div className="mx-auto max-w-7xl px-4">
             <ul className="flex items-center gap-1">
               {NAV_LINKS.map((link) => {
@@ -319,8 +235,9 @@ export function Header() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
+                      aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "block px-4 py-2.5 text-sm font-medium transition-colors border-b-2",
+                        "block px-4 py-3 text-[15px] font-medium transition-colors border-b-2",
                         isActive
                           ? "text-white border-[var(--color-primary)]"
                           : "text-white/70 border-transparent hover:text-white hover:border-[var(--color-primary)]"

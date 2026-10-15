@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "./SearchBar";
 
@@ -47,35 +48,24 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
       {/* Drawer */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú"
+        inert={!isOpen}
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-[280px] bg-[var(--color-secondary)] transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col",
+          "fixed top-0 left-0 z-50 h-full w-[300px] max-w-[85vw] bg-[var(--color-stage)] transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Close button */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
-          <span className="text-white font-[family-name:var(--font-heading)] font-bold text-lg">
-            Menu
-          </span>
+        <div className="flex items-center justify-between px-4 py-3">
+          <span className="type-section text-[2rem] text-white">Menú</span>
           <button
             onClick={onClose}
-            className="text-white/70 hover:text-white transition-colors p-1"
-            aria-label="Cerrar menu"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white/75 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Cerrar menú"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <X className="h-6 w-6" strokeWidth={1.75} />
           </button>
         </div>
 
@@ -92,10 +82,11 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "block px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                  "block px-4 py-3 rounded-xl text-lg font-medium transition-colors",
                   isActive
-                    ? "text-white bg-white/10 border-l-2 border-[var(--color-primary)]"
+                    ? "text-white bg-white/10"
                     : "text-white/70 hover:text-white hover:bg-white/5"
                 )}
               >
