@@ -9,6 +9,7 @@ orders paid before paid_at existed), in the store's time zone.
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
+from django.db import transaction
 from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.utils import timezone
@@ -251,3 +252,60 @@ class AdminOrderHistoryView(APIView):
         paginator = StandardPagination()
         page = paginator.paginate_queryset(qs, request)
         return paginator.get_paginated_response(AdminOrderSerializer(page, many=True).data)
+
+
+class AdminOrderUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=[Order.Status.SHIPPED, Order.Status.DELIVERED], required=False,
+        error_messages={"invalid_choice": "Solo se puede marcar como enviado o entregado."},
+    )
+    tracking_number = serializers.CharField(max_length=100, required=False, allow_blank=True, trim_whitespace=True)
+    shipping_carrier = serializers.CharField(max_length=100, required=False, allow_blank=True, trim_whitespace=True)
+
+
+class AdminOrderDetailView(APIView):
+    """PATCH: move a sale forward (pagado -> enviado -> entregado) and set its tracking."""
+
+    permission_classes = [IsAdminUser]
+    NEXT_STATUS = {Order.Status.PAID: Order.Status.SHIPPED, Order.Status.SHIPPED: Order.Status.DELIVERED}
+
+    def patch(self, request, pk):
+        serializer = AdminOrderUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No hay cambios para aplicar."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            order = Order.objects.select_for_update().filter(pk=pk).first()
+            if order is None:
+                return Response({"detail": "Pedido no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+            new_status = data.get("status")
+            if new_status and new_status != order.status:
+                if self.NEXT_STATUS.get(order.status) != new_status:
+                    return Response(
+                        {"status": [f"No se puede pasar de «{order.get_status_display()}» a «{Order.Status(new_status).label}»."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                order.status = new_status
+                if new_status == Order.Status.SHIPPED:
+                    order.shipped_at = timezone.now()
+            if ("tracking_number" in data or "shipping_carrier" in data) and order.status not in self.NEXT_STATUS.values():
+                return Response(
+                    {"tracking_number": ["La guía solo se registra en pedidos enviados o entregados."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            for field in ("tracking_number", "shipping_carrier"):
+                if field in data:
+                    setattr(order, field, data[field])
+            order.save()
+
+        order = (
+            Order.objects.filter(pk=order.pk)
+            .select_related("user")
+            .prefetch_related("items__product", "payments")
+            .annotate(unidades=Sum("items__quantity"), sold_at=Coalesce("paid_at", "created_at"))
+            .get()
+        )
+        return Response(AdminOrderSerializer(order).data)

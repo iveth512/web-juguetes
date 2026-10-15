@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .dashboard import (
+    AdminOrderDetailView,
     AdminOrderHistoryView,
     DashboardSummaryView,
     SalesByDayView,
@@ -29,4 +30,5 @@ urlpatterns = [
     path("admin/dashboard/sales-by-product/", SalesByProductView.as_view(), name="dashboard-sales-by-product"),
     path("admin/dashboard/insights/", InsightsView.as_view(), name="dashboard-insights"),
     path("admin/orders/", AdminOrderHistoryView.as_view(), name="admin-order-history"),
+    path("admin/orders/<uuid:pk>/", AdminOrderDetailView.as_view(), name="admin-order-detail"),
 ]

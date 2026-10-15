@@ -224,3 +224,65 @@ class TestOrderHistory:
 
     def test_invalid_status(self, admin_client):
         assert admin_client.get("/api/v1/admin/orders/?estado=xx").status_code == 400
+
+
+@pytest.mark.django_db
+class TestAdminOrderStatus:
+    def _url(self, order):
+        return f"/api/v1/admin/orders/{order.id}/"
+
+    def test_paid_to_shipped_with_tracking_then_delivered(self, admin_client, buyer):
+        order = _sale(buyer, _create_product(), timezone.localdate())
+
+        resp = admin_client.patch(self._url(order), {"status": "shipped", "tracking_number": " GU123 "}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["status"] == "shipped"
+        assert resp.data["tracking_number"] == "GU123"
+        order.refresh_from_db()
+        assert order.shipped_at is not None
+
+        resp = admin_client.patch(self._url(order), {"status": "delivered"}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["status"] == "delivered"
+
+    @pytest.mark.parametrize("start,target", [
+        (Order.Status.PAID, "delivered"),
+        (Order.Status.PENDING, "shipped"),
+        (Order.Status.DELIVERED, "shipped"),
+        (Order.Status.CANCELLED, "shipped"),
+    ])
+    def test_invalid_transitions_are_rejected(self, admin_client, buyer, start, target):
+        order = _sale(buyer, _create_product(), timezone.localdate(), status=start)
+        resp = admin_client.patch(self._url(order), {"status": target}, format="json")
+        assert resp.status_code == 400
+        assert "status" in resp.data
+        order.refresh_from_db()
+        assert order.status == start
+
+    def test_status_must_be_shipped_or_delivered(self, admin_client, buyer):
+        order = _sale(buyer, _create_product(), timezone.localdate())
+        resp = admin_client.patch(self._url(order), {"status": "refunded"}, format="json")
+        assert resp.status_code == 400
+
+    def test_tracking_needs_a_shipped_order(self, admin_client, buyer):
+        order = _sale(buyer, _create_product(), timezone.localdate())
+        resp = admin_client.patch(self._url(order), {"tracking_number": "GU1"}, format="json")
+        assert resp.status_code == 400
+
+    def test_tracking_can_be_corrected_after_shipping(self, admin_client, buyer):
+        order = _sale(buyer, _create_product(), timezone.localdate(), status=Order.Status.SHIPPED)
+        resp = admin_client.patch(self._url(order), {"tracking_number": "GU2"}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["tracking_number"] == "GU2"
+
+    def test_empty_body_and_unknown_order(self, admin_client, buyer):
+        order = _sale(buyer, _create_product(), timezone.localdate())
+        assert admin_client.patch(self._url(order), {}, format="json").status_code == 400
+        missing = "/api/v1/admin/orders/00000000-0000-0000-0000-000000000000/"
+        assert admin_client.patch(missing, {"status": "shipped"}, format="json").status_code == 404
+
+    def test_customers_cannot_update(self, buyer):
+        order = _sale(buyer, _create_product(), timezone.localdate())
+        client = APIClient()
+        client.force_authenticate(user=buyer)
+        assert client.patch(self._url(order), {"status": "shipped"}, format="json").status_code == 403
