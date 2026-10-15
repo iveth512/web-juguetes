@@ -83,11 +83,13 @@ export function Footer() {
 
   return (
     <footer className="mt-auto">
-      <div className="grain overflow-hidden bg-[var(--color-stage)] text-[var(--color-stage-text)]">
+      <div className="grain bg-[var(--color-stage)] text-[var(--color-stage-text)]">
         <div className="mx-auto max-w-7xl px-4 pb-10 pt-12 md:pt-16">
           <div className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-16">
             <div className="max-w-sm">
-              <p className="text-base leading-relaxed text-[var(--color-stage-muted)]">
+              {/* The live logo: its mascot follows the pointer. */}
+              <Logo className="w-[min(260px,70vw)] [&_svg]:!h-auto [&_svg]:!w-full" hop={5} />
+              <p className="mt-6 text-base leading-relaxed text-[var(--color-stage-muted)]">
                 Funko Pop! originales de anime, Marvel, Star Wars, Pokémon, música y mucho más, con envío a toda
                 Colombia.
               </p>
@@ -114,10 +116,6 @@ export function Footer() {
           </p>
         </div>
 
-        {/* Closing mark: the live logo (its mascot follows the pointer), sitting on the page's bottom edge. */}
-        <div className="mx-auto flex max-w-7xl justify-center px-4">
-          <Logo className="w-[min(420px,80vw)] translate-y-[6%] [&_svg]:!h-auto [&_svg]:!w-full" hop={6} />
-        </div>
       </div>
     </footer>
   );
