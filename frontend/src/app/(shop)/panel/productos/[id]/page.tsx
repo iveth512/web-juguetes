@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { AlertCircle, CheckCircle2, ChevronLeft, ExternalLink, X } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { DeleteProductControl } from '@/components/admin/DeleteProductControl';
 import { ProductForm } from '@/components/admin/ProductForm';
-import { adminCardClass } from '@/components/admin/AdminShell';
+import { StatusChip, StockChip, panelClass } from '@/components/admin/productUi';
+import { cn } from '@/lib/utils';
 import { adminGetProduct } from '@/lib/api';
 import type { AdminProduct } from '@/types/admin';
 
@@ -27,29 +29,51 @@ function EditProduct() {
 
   if (error) {
     return (
-      <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-        {error} <Link href="/panel/productos" className="font-semibold underline">Volver al listado</Link>
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-[color-mix(in_oklab,var(--color-error)_12%,transparent)] p-4 text-sm text-[var(--color-text)]" role="alert">
+        <AlertCircle className="h-4 w-4 shrink-0 text-[var(--color-error)]" strokeWidth={1.75} aria-hidden />
+        {error}
+        <Link href="/panel/productos" className="font-semibold text-[var(--color-primary-text)] underline underline-offset-2">Volver al listado</Link>
       </div>
     );
   }
   if (!product) {
-    return <div className="h-96 max-w-4xl animate-pulse rounded-xl bg-[var(--color-bg-alt)]" />;
+    return (
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]" aria-busy="true">
+        <div className="h-96 animate-pulse rounded-xl bg-[var(--color-bg-alt)]" />
+        <div className="h-72 animate-pulse rounded-xl bg-[var(--color-bg-alt)]" />
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <Link href="/panel/productos" className="inline-flex min-h-11 items-center text-[var(--color-text-muted)] hover:text-[var(--color-primary-text)]">Volver a productos</Link>
+    <>
+      <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link href="/panel/productos" className="-ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+          <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          Productos
+        </Link>
+        <span className="min-w-0 truncate text-base font-semibold text-[var(--color-text)]">{product.name}</span>
+        <StatusChip active={product.is_active} />
+        <StockChip product={product} />
+        <span className="text-sm tabular-nums text-[var(--color-text-muted)]">
+          {product.units_sold ?? 0} {product.units_sold === 1 ? 'unidad vendida' : 'unidades vendidas'}
+        </span>
         {product.is_active && (
-          <Link href={`/productos/${product.slug}`} target="_blank" className="inline-flex min-h-11 items-center font-semibold text-[var(--color-primary-text)] hover:underline">
+          <Link href={`/productos/${product.slug}`} target="_blank" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[var(--color-primary-text)] hover:underline sm:ml-auto">
             Ver en la tienda
+            <ExternalLink className="h-4 w-4" strokeWidth={1.75} aria-hidden />
           </Link>
         )}
-        <span className="text-[var(--color-text-muted)]">{product.units_sold ?? 0} unidades vendidas</span>
       </div>
       {saved && (
-        <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800" role="status">
-          {saved}
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-xl bg-[color-mix(in_oklab,var(--color-accent)_22%,transparent)] py-2 pl-4 pr-2 text-sm font-semibold text-[var(--color-text)]" role="status">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+            {saved}
+          </span>
+          <button type="button" onClick={() => setSaved('')} aria-label="Cerrar aviso" className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[var(--color-bg)]">
+            <X className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          </button>
         </div>
       )}
       <ProductForm
@@ -61,9 +85,9 @@ function EditProduct() {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
-      <section className={`${adminCardClass} mt-6 flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between`} aria-labelledby="delete-title">
+      <section className={cn(panelClass, 'mt-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6')} aria-labelledby="delete-title">
         <div>
-          <h2 id="delete-title" className="text-base font-bold text-[var(--color-text)]">Eliminar producto</h2>
+          <h2 id="delete-title" className="text-lg font-semibold leading-tight text-[var(--color-text)]">Eliminar producto</h2>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">Si tiene ventas, solo se desactivará y dejará de verse en la tienda.</p>
           {deleteError && <p className="mt-2 text-sm text-[var(--color-error)]" role="alert">{deleteError}</p>}
         </div>
@@ -78,7 +102,7 @@ function EditProduct() {
           className="shrink-0"
         />
       </section>
-    </div>
+    </>
   );
 }
 

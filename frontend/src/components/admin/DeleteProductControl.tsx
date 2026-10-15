@@ -3,18 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { adminDeleteProduct } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { adminPillClass as pill, adminSecondaryButtonClass } from './AdminShell';
+import { pillClass as pill, secondaryButtonClass } from './productUi';
 
 /** Inline two-step delete: the first click asks, the second one deletes. */
 export function DeleteProductControl({
   productId,
   label = 'Eliminar',
+  variant = 'outline',
   onDeleted,
   onError,
   className,
 }: {
   productId: string;
   label?: string;
+  /** `quiet` is a text button for dense rows; `outline` stands on its own. */
+  variant?: 'outline' | 'quiet';
   onDeleted: (deactivated: boolean) => void;
   onError: (message: string) => void;
   className?: string;
@@ -55,7 +58,9 @@ export function DeleteProductControl({
         onClick={() => setConfirming(true)}
         className={cn(
           pill,
-          'border border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
+          variant === 'quiet'
+            ? 'px-3 text-[var(--color-error)] hover:bg-[var(--color-error)]/10'
+            : 'border border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
           className
         )}
       >
@@ -65,13 +70,13 @@ export function DeleteProductControl({
   }
 
   return (
-    <div role="group" aria-label="Confirmar eliminación" className={cn('flex flex-wrap items-center gap-2', className)}>
+    <div role="group" aria-label="Confirmar eliminación" className={cn('flex flex-wrap items-center justify-end gap-2', className)}>
       <span className="text-sm font-semibold text-[var(--color-text)]">¿Eliminar?</span>
       <button
         type="button"
         onClick={confirm}
         disabled={busy}
-        className={cn(pill, 'bg-[var(--color-error)] text-[var(--color-bg)] hover:opacity-90')}
+        className={cn(pill, 'px-4 bg-[var(--color-error)] text-white hover:opacity-90 dark:text-[#1A1A2E]')}
       >
         {busy ? 'Eliminando…' : 'Sí, eliminar'}
       </button>
@@ -80,7 +85,7 @@ export function DeleteProductControl({
         type="button"
         onClick={() => setConfirming(false)}
         disabled={busy}
-        className={adminSecondaryButtonClass}
+        className={cn(secondaryButtonClass, 'px-4')}
       >
         Cancelar
       </button>
