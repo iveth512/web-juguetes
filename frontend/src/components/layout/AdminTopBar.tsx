@@ -25,7 +25,7 @@ export function AdminTopBar() {
   return (
     <header className="grain sticky top-0 z-50 bg-[var(--color-stage)] text-white">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-6">
-        <Logo href="/panel/dashboard" className="h-9" hop={3} />
+        <Logo className="h-9" hop={3} />
         <span className="hidden rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-white/85 sm:inline">
           Panel de administración
         </span>

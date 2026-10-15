@@ -82,7 +82,7 @@ export function Footer() {
           <div className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-16">
             <div className="max-w-sm">
               {/* The live logo: its mascot follows the pointer. */}
-              <Logo className="w-[min(260px,70vw)] [&_svg]:!h-auto [&_svg]:!w-full" hop={5} />
+              <Logo className="w-[min(260px,70vw)] [&_svg]:!h-auto [&_svg]:!w-full" hop={5} signOn="neon" />
               <p className="mt-6 text-base leading-relaxed text-[var(--color-stage-muted)]">
                 Funko Pop! originales de anime, Marvel, Star Wars, Pokémon, música y mucho más, con envío a toda
                 Colombia.

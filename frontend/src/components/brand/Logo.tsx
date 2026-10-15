@@ -20,6 +20,8 @@ export interface LogoProps {
   still?: boolean;
   /** Hover hop height in px; lower it where the logo sits in a tight container. */
   hop?: number;
+  /** How the script writes itself in on first view: a plain white outline, or a flickering neon tube. */
+  signOn?: 'outline' | 'neon';
 }
 
 /**
@@ -28,7 +30,7 @@ export interface LogoProps {
  * and it blinks and winks on its own at random intervals (never while hovered).
  * Reduced motion stops everything and resets the pose; touch keeps only the blinks.
  */
-export function Logo({ href = '/', className, still = false, hop = 7 }: LogoProps) {
+export function Logo({ href = '/', className, still = false, hop = 7, signOn = 'outline' }: LogoProps) {
   const root = useRef<HTMLAnchorElement>(null);
   const titleId = useId();
 
@@ -98,8 +100,44 @@ export function Logo({ href = '/', className, still = false, hop = 7 }: LogoProp
           let look: { to: (x: number, y: number) => void; center: () => void } | null = null;
           const cleanups: Array<() => void> = [];
 
+          // Sign-on: the script outlines draw, then fill. The neon variant glows and flickers like a tube
+          // warming up. Plays once, the first time this logo is on screen.
+          const neon = signOn === 'neon';
+          const strokes = Array.from(link.querySelectorAll<SVGPathElement>('[data-part="para"] path, [data-part="frikis"] path, [data-part="dots"] path'));
+          let lit = false;
+          const lightUp = () => {
+            if (lit) return;
+            lit = true;
+            const tl = gsap.timeline({
+              onComplete: () => {
+                gsap.set(strokes, { clearProps: 'stroke,strokeWidth,strokeDasharray,strokeDashoffset,fillOpacity,filter,opacity' });
+              },
+            });
+            strokes.forEach((path, i) => {
+              const length = path.getTotalLength();
+              gsap.set(path, {
+                stroke: neon ? '#FFB27A' : '#FFFFFF',
+                strokeWidth: 4,
+                strokeDasharray: length,
+                strokeDashoffset: length,
+                fillOpacity: 0,
+                ...(neon && { filter: 'drop-shadow(0 0 6px #F57C20) drop-shadow(0 0 16px #F57C20)' }),
+              });
+              const at = i * 0.3;
+              tl.to(path, { strokeDashoffset: 0, duration: 0.7, ease: 'power2.out' }, at);
+              if (neon) {
+                tl.to(path, { keyframes: [{ opacity: 0.2 }, { opacity: 1 }, { opacity: 0.4 }, { opacity: 1 }], duration: 0.5, ease: 'none' }, at + 0.7)
+                  .to(path, { fillOpacity: 1, stroke: '#FFFFFF', duration: 0.5, ease: 'power1.out' }, at + 1.3)
+                  .to(path, { filter: 'drop-shadow(0 0 0px #F57C20) drop-shadow(0 0 0px #F57C20)', duration: 0.8, ease: 'power1.out' }, at + 1.8);
+              } else {
+                tl.to(path, { fillOpacity: 1, duration: 0.45, ease: 'power1.out' }, at + 0.6);
+              }
+            });
+          };
+
           const io = new IntersectionObserver(([entry]) => {
             visible = entry.isIntersecting;
+            if (visible) lightUp();
             if (!visible) look?.center();
           });
           io.observe(link);
@@ -198,13 +236,21 @@ export function Logo({ href = '/', className, still = false, hop = 7 }: LogoProp
       );
       return () => mm.revert();
     },
-    { scope: root, dependencies: [still, hop] },
+    { scope: root, dependencies: [still, hop, signOn] },
   );
 
   return (
     <Link
       ref={root}
       href={href}
+      onClick={(e) => {
+        // Already there: go back to the top instead of doing nothing.
+        if (window.location.pathname === href) {
+          e.preventDefault();
+          const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+        }
+      }}
       className={cn('inline-flex shrink-0 rounded-sm text-white [-webkit-tap-highlight-color:transparent]', className)}
     >
       <svg
