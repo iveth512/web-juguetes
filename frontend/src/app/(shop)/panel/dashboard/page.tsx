@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { AdminShell, adminCardClass, adminInputClass } from '@/components/admin/AdminShell';
+import { AdminShell, adminInputClass } from '@/components/admin/AdminShell';
+import { ChartMotion, GROUNDS, containerClass, type Ground } from '@/components/admin/insights/InsightCard';
+import { chartTokens } from '@/components/admin/insights/charts';
 import { SalesByDayChart } from '@/components/admin/charts/SalesByDayChart';
 import { TopProductsChart } from '@/components/admin/charts/TopProductsChart';
 import { formatDay } from '@/components/admin/charts/format';
 import { ApiError, adminListOrders, adminUpdateOrder, getDashboardSummary, getSalesByDay, getSalesByProduct } from '@/lib/api';
-import { formatPrice } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import type { AdminOrder, AdminOrderPage, DashboardSummary, DateRange, SalesByDay, SalesByProduct } from '@/types/admin';
 import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/types/product';
 
@@ -35,46 +37,56 @@ const PRESETS = [
 
 const PAYMENT_LABELS: Record<string, string> = { CARD: 'Tarjeta', PSE: 'PSE' };
 
-function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Figure({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className={`${adminCardClass} p-4`}>
-      <p className="text-sm text-[var(--color-text-muted)]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-[var(--color-text)]">{value}</p>
-      {hint && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{hint}</p>}
+    <div className="min-w-0">
+      <dt className="text-base text-[var(--color-text-muted)]">{label}</dt>
+      <dd className="mt-1">
+        <span className="block text-[clamp(1.75rem,2.6vw,2.5rem)] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-text)]">{value}</span>
+        {hint && <span className="mt-2 block text-sm text-[var(--color-text-muted)]">{hint}</span>}
+      </dd>
     </div>
   );
 }
 
-function AlertTile({ label, count, href }: { label: string; count: number; href?: string }) {
+function Alert({ label, count, href }: { label: string; count: number; href?: string }) {
   const body = (
-    <div className={`${adminCardClass} flex items-center justify-between gap-3 px-4 py-3 ${count > 0 ? '' : 'opacity-70'}`}>
-      <span className="text-sm text-[var(--color-text)]">{label}</span>
-      <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${count > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-[var(--color-bg-alt)] text-[var(--color-text-muted)]'}`}>
-        {count}
-      </span>
-    </div>
+    <>
+      <span className={`text-3xl font-semibold tabular-nums ${count > 0 ? 'text-[var(--color-primary-text)]' : 'text-[var(--color-text-muted)]'}`}>{count}</span>
+      <span className="text-base text-[var(--color-text)]">{label}</span>
+    </>
   );
-  return href && count > 0 ? <Link href={href} className="block hover:opacity-90">{body}</Link> : body;
+  return (
+    <li>
+      {href && count > 0
+        ? <Link href={href} className="inline-flex min-h-11 items-baseline gap-2 underline-offset-4 hover:underline">{body}</Link>
+        : <span className="inline-flex min-h-11 items-baseline gap-2">{body}</span>}
+    </li>
+  );
 }
 
-function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function Section({ id, title, subtitle, ground, children }: {
+  id: string; title: string; subtitle?: string; ground: Ground; children: React.ReactNode;
+}) {
   return (
-    <section className={`${adminCardClass} p-5`}>
-      <h2 className="text-lg font-bold text-[var(--color-text)]">{title}</h2>
-      {subtitle && <p className="mb-4 text-xs text-[var(--color-text-muted)]">{subtitle}</p>}
-      {children}
+    <section aria-labelledby={id} className={cn('py-20 md:py-24', GROUNDS[ground])}>
+      <div className={containerClass}>
+        <h2 id={id} className="type-section text-[var(--color-text)]">{title}</h2>
+        {subtitle && <p className="mt-3 max-w-[70ch] text-base text-[var(--color-text-muted)]">{subtitle}</p>}
+        <div className="mt-10">{children}</div>
+      </div>
     </section>
   );
 }
 
 const toggleClass =
-  'mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-primary-text)] hover:underline';
+  'mt-4 inline-flex min-h-11 items-center text-base font-semibold text-[var(--color-primary-text)] underline-offset-4 hover:underline';
 
 function EmptyChart({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="flex min-h-48 flex-col items-center justify-center rounded-lg bg-[var(--color-bg-alt)] px-6 py-10 text-center">
-      <p className="text-base font-semibold text-[var(--color-text)]">{title}</p>
-      {hint && <p className="mt-1 text-sm text-[var(--color-text-muted)]">{hint}</p>}
+    <div className="py-10">
+      <p className="text-lg font-semibold text-[var(--color-text)]">{title}</p>
+      {hint && <p className="mt-1 text-base text-[var(--color-text-muted)]">{hint}</p>}
     </div>
   );
 }
@@ -179,7 +191,7 @@ function SalesHistory({ range }: { range: DateRange }) {
   const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_SIZE)) : 1;
 
   return (
-    <Panel title="Historial de ventas" subtitle="Pedidos del periodo seleccionado, del más reciente al más antiguo. Las ventas son pedidos pagados, enviados o entregados.">
+    <Section id="dash-historial" ground="paper" title="Historial de ventas" subtitle="Pedidos del periodo seleccionado, del más reciente al más antiguo. Las ventas son pedidos pagados, enviados o entregados.">
       <div className="mb-4 flex flex-col gap-3 md:flex-row">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por cliente, correo o # de pedido" aria-label="Buscar pedidos" className={`${adminInputClass} md:max-w-sm`} />
         <select aria-label="Estado" value={estado} onChange={(e) => { setEstado(e.target.value); setPage(1); }} className={`${adminInputClass} md:w-64`}>
@@ -194,7 +206,7 @@ function SalesHistory({ range }: { range: DateRange }) {
         </select>
       </div>
 
-      {error && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
+      {error && <p role="alert" className="mb-4 text-base font-semibold text-[var(--color-error)]">{error}</p>}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -262,7 +274,7 @@ function SalesHistory({ range }: { range: DateRange }) {
           </div>
         </div>
       )}
-    </Panel>
+    </Section>
   );
 }
 
@@ -319,168 +331,187 @@ function Dashboard() {
 
   const rangeLabel = useMemo(() => `${formatDay(range.desde, true)} – ${formatDay(range.hasta, true)}`, [range]);
 
-  return (
-    <div className="space-y-6">
-      {/* Filters: one row, above everything they control */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Periodo">
-          {PRESETS.map((p) => (
-            <button
-              key={p.key}
-              type="button"
-              aria-pressed={preset === p.key}
-              onClick={() => choosePreset(p.key)}
-              className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${preset === p.key ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-on-primary)]' : 'border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'}`}
-            >
-              {p.label}
-            </button>
+  const pillClass = 'inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors';
+  const idleClass = 'bg-[var(--color-bg-alt)] text-[var(--color-text)] hover:bg-[#E6E1F4] dark:hover:bg-[#1D1245]';
+
+  const dayTable = byDay && (
+    <div className="mt-2 max-h-72 max-w-3xl overflow-y-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs text-[var(--color-text-muted)]">
+            <th className="py-1.5 font-semibold">Día</th>
+            <th className="py-1.5 font-semibold text-right">Pedidos</th>
+            <th className="py-1.5 font-semibold text-right">Ventas netas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {byDay.dias.map((d) => (
+            <tr key={d.fecha} className="border-t border-[var(--color-border)]">
+              <td className="py-1.5 text-[var(--color-text)]">{formatDay(d.fecha, true)}</td>
+              <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{d.pedidos}</td>
+              <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{formatPrice(d.total)}</td>
+            </tr>
           ))}
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs text-[var(--color-text-muted)]">
-            Desde
-            <input type="date" value={draft.desde} max={draft.hasta} onChange={(e) => setDraft((d) => ({ ...d, desde: e.target.value }))} className={`${adminInputClass} mt-1 w-40`} />
-          </label>
-          <label className="text-xs text-[var(--color-text-muted)]">
-            Hasta
-            <input type="date" value={draft.hasta} min={draft.desde} onChange={(e) => setDraft((d) => ({ ...d, hasta: e.target.value }))} className={`${adminInputClass} mt-1 w-40`} />
-          </label>
-          <button type="button" onClick={applyCustom} className="min-h-11 rounded-full border border-[var(--color-border)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]">
-            Aplicar
-          </button>
-        </div>
-      </div>
-      {rangeError && <p className="text-sm text-red-600" role="alert">{rangeError}</p>}
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-          {error} <button type="button" onClick={load} className="font-semibold underline">Reintentar</button>
-        </div>
-      )}
+        </tbody>
+      </table>
+    </div>
+  );
 
-      {/* Headline + stat tiles */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_2fr]">
-        <div className={`${adminCardClass} p-5`}>
-          <p className="text-sm text-[var(--color-text-muted)]">Ventas netas</p>
-          <p className="mt-1 text-5xl font-semibold tabular-nums text-[var(--color-text)]">
-            {summary ? formatPrice(summary.ventas_total) : <span className="inline-block h-12 w-56 animate-pulse rounded bg-[var(--color-bg-alt)]" />}
-          </p>
-          {summary && (
-            <dl className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
-              <div className="flex gap-1">
-                <dt>Productos</dt>
-                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(Number(summary.ventas_total) + Number(summary.descuentos))}</dd>
+  return (
+    <div className={chartTokens.varsClass}>
+      <ChartMotion />
+      <header className={cn('pb-20 pt-12 md:pb-24 md:pt-16', GROUNDS.paper)}>
+        <div className={containerClass}>
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <h1 className="type-page text-[var(--color-text)]">Dashboard de ventas</h1>
+            {/* Filters: one row, above everything they control */}
+            <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Periodo">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    aria-pressed={preset === p.key}
+                    onClick={() => choosePreset(p.key)}
+                    className={cn(pillClass, preset === p.key ? 'bg-[var(--color-secondary)] text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-on-primary)]' : idleClass)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
-              <div className="flex gap-1">
-                <dt>− Descuentos</dt>
-                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(summary.descuentos)}</dd>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="text-sm text-[var(--color-text-muted)]">
+                  Desde
+                  <input type="date" value={draft.desde} max={draft.hasta} onChange={(e) => setDraft((d) => ({ ...d, desde: e.target.value }))} className={`${adminInputClass} mt-1 w-40`} />
+                </label>
+                <label className="text-sm text-[var(--color-text-muted)]">
+                  Hasta
+                  <input type="date" value={draft.hasta} min={draft.desde} onChange={(e) => setDraft((d) => ({ ...d, hasta: e.target.value }))} className={`${adminInputClass} mt-1 w-40`} />
+                </label>
+                <button type="button" onClick={applyCustom} className={cn(pillClass, 'px-5', idleClass)}>
+                  Aplicar
+                </button>
               </div>
-              <div className="flex gap-1">
-                <dt>· Envío cobrado</dt>
-                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(summary.envios_cobrados)}</dd>
-              </div>
-              <div className="flex gap-1">
-                <dt>· Total cobrado</dt>
-                <dd className="font-semibold tabular-nums text-[var(--color-text)]">{formatPrice(summary.total_cobrado)}</dd>
-              </div>
-            </dl>
+            </div>
+          </div>
+          {rangeError && <p className="mt-3 text-sm text-[var(--color-error)]" role="alert">{rangeError}</p>}
+          {error && (
+            <p role="alert" className="mt-6 text-base text-[var(--color-text)]">
+              <strong className="font-semibold text-[var(--color-error)]">{error}</strong>{' '}
+              <button type="button" onClick={load} className="min-h-11 font-semibold text-[var(--color-primary-text)] underline underline-offset-4">Reintentar</button>
+            </p>
           )}
-          <p className="mt-2 text-xs text-[var(--color-text-muted)]">{rangeLabel} · productos de pedidos pagados, enviados o entregados, con descuentos y sin envío</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <StatTile label="Pedidos" value={summary ? String(summary.pedidos) : '—'} />
-          <StatTile label="Ticket promedio" value={summary ? formatPrice(summary.ticket_promedio) : '—'} hint="Ventas netas por pedido" />
-          <StatTile label="Unidades vendidas" value={summary ? String(summary.unidades_vendidas) : '—'} />
-          <StatTile label="Clientes" value={summary ? String(summary.clientes) : '—'} hint="Compradores distintos" />
-        </div>
-      </div>
 
-      {summary && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <AlertTile label="Por despachar" count={summary.pedidos_por_despachar} />
-          <AlertTile label="Pendientes de pago" count={summary.pedidos_pendientes_pago} />
-          <AlertTile label="Requieren revisión" count={summary.pedidos_requieren_atencion} />
-          <AlertTile label="Productos con stock bajo" count={summary.productos_bajo_stock} href="/panel/productos?estado=bajo_stock" />
-        </div>
-      )}
+          <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end lg:gap-16">
+            <div className="min-w-0">
+              <p className="text-lg text-[var(--color-text)]">Ventas netas</p>
+              <p className="misreg mt-2 font-[family-name:var(--font-display)] text-[clamp(3.5rem,8vw,7.5rem)] leading-[0.9] tabular-nums text-[var(--color-text)]">
+                {summary ? formatPrice(summary.ventas_total) : <span className="inline-block h-24 w-72 max-w-full animate-pulse rounded bg-[var(--color-bg-alt)] align-bottom" />}
+              </p>
+              {summary && (
+                <dl className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-base text-[var(--color-text-muted)]">
+                  <div className="flex gap-1.5">
+                    <dt>Productos</dt>
+                    <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(Number(summary.ventas_total) + Number(summary.descuentos))}</dd>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <dt>− Descuentos</dt>
+                    <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(summary.descuentos)}</dd>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <dt>· Envío cobrado</dt>
+                    <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(summary.envios_cobrados)}</dd>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <dt>· Total cobrado</dt>
+                    <dd className="font-semibold tabular-nums text-[var(--color-text)]">{formatPrice(summary.total_cobrado)}</dd>
+                  </div>
+                </dl>
+              )}
+              <p className="mt-2 text-sm text-[var(--color-text-muted)]">{rangeLabel} · productos de pedidos pagados, enviados o entregados, con descuentos y sin envío</p>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-10 gap-y-8">
+              <Figure label="Pedidos" value={summary ? String(summary.pedidos) : '—'} />
+              <Figure label="Ticket promedio" value={summary ? formatPrice(summary.ticket_promedio) : '—'} hint="Ventas netas por pedido" />
+              <Figure label="Unidades vendidas" value={summary ? String(summary.unidades_vendidas) : '—'} />
+              <Figure label="Clientes" value={summary ? String(summary.clientes) : '—'} hint="Compradores distintos" />
+            </dl>
+          </div>
 
-      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[3fr_2fr]">
-        <Panel title="Ventas por día" subtitle={`Ventas netas de cada día (COP, con descuentos y sin envío) · ${rangeLabel}`}>
-          {!byDay ? (
-            <div className="h-60 animate-pulse rounded bg-[var(--color-bg-alt)]" />
-          ) : !byDay.dias.some((d) => Number(d.total) > 0) ? (
-            <EmptyChart title="Aún no hay ventas en este periodo." hint="Cuando entren pedidos pagados aparecerán aquí." />
-          ) : (
-            <>
-              <SalesByDayChart days={byDay.dias} />
-              <button type="button" onClick={() => setShowDayTable((v) => !v)} className={toggleClass} aria-expanded={showDayTable}>
-                {showDayTable ? 'Ocultar tabla' : 'Ver como tabla'}
-              </button>
-              {showDayTable && (
-                <div className="mt-2 max-h-72 overflow-y-auto">
-                  <table className="w-full text-sm">
+          {summary && (
+            <ul aria-label="Pendientes" className="mt-14 flex flex-wrap gap-x-10 gap-y-2">
+              <Alert label="por despachar" count={summary.pedidos_por_despachar} />
+              <Alert label="pendientes de pago" count={summary.pedidos_pendientes_pago} />
+              <Alert label="requieren revisión" count={summary.pedidos_requieren_atencion} />
+              <Alert label="productos con stock bajo" count={summary.productos_bajo_stock} href="/panel/productos?estado=bajo_stock" />
+            </ul>
+          )}
+        </div>
+      </header>
+
+      <Section id="dash-dias" ground="field" title="Ventas por día" subtitle={`Ventas netas de cada día (COP, con descuentos y sin envío) · ${rangeLabel}. En naranja, el mejor día.`}>
+        {!byDay ? (
+          <div className="h-60 animate-pulse rounded bg-[var(--ins-ctx)] opacity-40" />
+        ) : !byDay.dias.some((d) => Number(d.total) > 0) ? (
+          <EmptyChart title="Aún no hay ventas en este periodo." hint="Cuando entren pedidos pagados aparecerán aquí." />
+        ) : (
+          <>
+            <SalesByDayChart days={byDay.dias} />
+            <button type="button" onClick={() => setShowDayTable((v) => !v)} className={toggleClass} aria-expanded={showDayTable}>
+              {showDayTable ? 'Ocultar tabla' : 'Ver como tabla'}
+            </button>
+            {showDayTable && dayTable}
+          </>
+        )}
+      </Section>
+
+      <section aria-labelledby="dash-productos" className={cn('py-20 md:py-24', GROUNDS.stage)}>
+        <div className={cn(containerClass, 'grid gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-16')}>
+          <div>
+            <h2 id="dash-productos" className="type-section text-[var(--color-text)]">Ventas por producto</h2>
+            <p className="mt-3 max-w-[40ch] text-base text-[var(--color-text-muted)]">Top 10 por ingresos (precio de venta × unidades, antes de descuentos y envío). En naranja, el que más vende.</p>
+          </div>
+          <div className="min-w-0">
+            {!byProduct ? (
+              <div className="h-60 animate-pulse rounded bg-[var(--ins-ctx)] opacity-40" />
+            ) : byProduct.productos.length === 0 ? (
+              <EmptyChart title="Ningún producto vendido en este periodo." />
+            ) : (
+              <>
+                <TopProductsChart products={byProduct.productos} />
+                <button type="button" onClick={() => setShowProductTable((v) => !v)} className={toggleClass} aria-expanded={showProductTable}>
+                  {showProductTable ? 'Ocultar tabla' : 'Ver como tabla'}
+                </button>
+                {showProductTable && (
+                  <table className="mt-2 w-full text-sm">
+                    <caption className="sr-only">Ventas por producto</caption>
                     <thead>
                       <tr className="text-left text-xs text-[var(--color-text-muted)]">
-                        <th className="py-1.5 font-semibold">Día</th>
+                        <th className="py-1.5 font-semibold">Producto</th>
+                        <th className="py-1.5 font-semibold text-right">Unidades</th>
                         <th className="py-1.5 font-semibold text-right">Pedidos</th>
-                        <th className="py-1.5 font-semibold text-right">Ventas netas</th>
+                        <th className="py-1.5 font-semibold text-right">Ingresos</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {byDay.dias.map((d) => (
-                        <tr key={d.fecha} className="border-t border-[var(--color-border)]">
-                          <td className="py-1.5 text-[var(--color-text)]">{formatDay(d.fecha, true)}</td>
-                          <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{d.pedidos}</td>
-                          <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{formatPrice(d.total)}</td>
+                      {byProduct.productos.map((p) => (
+                        <tr key={p.product_id} className="border-t border-[var(--color-border)]">
+                          <td className="py-1.5 pr-2 text-[var(--color-text)]">
+                            <Link href={`/panel/productos/${p.product_id}`} className="hover:text-[var(--color-primary-text)] hover:underline">{p.nombre}</Link>
+                          </td>
+                          <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{p.unidades}</td>
+                          <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{p.pedidos}</td>
+                          <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{formatPrice(p.ingresos)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
-            </>
-          )}
-        </Panel>
-
-        <Panel title="Ventas por producto" subtitle="Top 10 por ingresos (precio de venta × unidades, antes de descuentos y envío)">
-          {!byProduct ? (
-            <div className="h-60 animate-pulse rounded bg-[var(--color-bg-alt)]" />
-          ) : byProduct.productos.length === 0 ? (
-            <EmptyChart title="Ningún producto vendido en este periodo." />
-          ) : (
-            <>
-              <TopProductsChart products={byProduct.productos} />
-              <button type="button" onClick={() => setShowProductTable((v) => !v)} className={toggleClass} aria-expanded={showProductTable}>
-                {showProductTable ? 'Ocultar tabla' : 'Ver como tabla'}
-              </button>
-              {showProductTable && (
-                <table className="mt-2 w-full text-sm">
-                  <caption className="sr-only">Ventas por producto</caption>
-                  <thead>
-                    <tr className="text-left text-xs text-[var(--color-text-muted)]">
-                      <th className="py-1.5 font-semibold">Producto</th>
-                      <th className="py-1.5 font-semibold text-right">Unidades</th>
-                      <th className="py-1.5 font-semibold text-right">Pedidos</th>
-                      <th className="py-1.5 font-semibold text-right">Ingresos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {byProduct.productos.map((p) => (
-                      <tr key={p.product_id} className="border-t border-[var(--color-border)]">
-                        <td className="py-1.5 pr-2 text-[var(--color-text)]">
-                          <Link href={`/panel/productos/${p.product_id}`} className="hover:text-[var(--color-primary-text)] hover:underline">{p.nombre}</Link>
-                        </td>
-                        <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{p.unidades}</td>
-                        <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{p.pedidos}</td>
-                        <td className="py-1.5 text-right tabular-nums text-[var(--color-text)]">{formatPrice(p.ingresos)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </>
-          )}
-        </Panel>
-      </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </section>
 
       <SalesHistory key={`${range.desde}_${range.hasta}`} range={range} />
     </div>
@@ -489,7 +520,7 @@ function Dashboard() {
 
 export default function AdminDashboardPage() {
   return (
-    <AdminShell title="Dashboard de ventas">
+    <AdminShell title="Dashboard de ventas" bleed>
       <Dashboard />
     </AdminShell>
   );

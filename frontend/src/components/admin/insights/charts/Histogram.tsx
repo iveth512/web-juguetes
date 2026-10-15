@@ -40,13 +40,14 @@ export function Histogram({ data, height = 140, labelEvery = 1, divider, ariaLab
           >
             {(d.capLabel || active === i) && <span className={`mb-1 whitespace-nowrap ${t.label.valueStrong}`}>{d.capLabel ?? d.value}</span>}
             <span
-              className={`block w-full ${t.transition}`}
+              className={`ins-grow-y block w-full ${t.transition}`}
               style={{
                 maxWidth: t.bar.maxColumnWidth,
                 height: d.value > 0 ? Math.max((d.value / top) * height, 3) : 0,
                 background: toneColor[d.tone],
                 borderRadius: t.bar.radiusTop,
                 opacity: active === null || active === i ? 1 : t.bar.dimmedOpacity,
+                animationDelay: `${i * 30}ms`,
               }}
             />
             {divider?.beforeIndex === i && <span aria-hidden className="absolute -left-px bottom-0 top-0 w-px" style={{ background: t.color.axis }} />}

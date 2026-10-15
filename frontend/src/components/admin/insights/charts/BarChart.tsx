@@ -24,7 +24,7 @@ export function BarChart({ rows, max, marker, ariaLabel }: {
   return (
     <div role="group" aria-label={ariaLabel}>
       <ul className="space-y-2.5">
-        {rows.map((r) => (
+        {rows.map((r, i) => (
           <li
             key={r.key}
             tabIndex={0}
@@ -39,12 +39,13 @@ export function BarChart({ rows, max, marker, ariaLabel }: {
             <span className="flex min-w-0 items-center gap-2">
               <span className="relative min-w-0 flex-1" style={{ height: t.bar.thickness }}>
                 <span
-                  className={`absolute inset-y-0 left-0 ${t.transition}`}
+                  className={`ins-grow-x absolute inset-y-0 left-0 ${t.transition}`}
                   style={{
                     width: `${Math.max((r.value / top) * 100, r.value > 0 ? 1 : 0)}%`,
                     background: toneColor[r.tone],
                     borderRadius: t.bar.radiusEnd,
                     opacity: active === null || active === r.key ? 1 : t.bar.dimmedOpacity,
+                    animationDelay: `${i * 45}ms`,
                   }}
                 />
                 {marker && (

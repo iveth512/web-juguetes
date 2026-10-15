@@ -8,7 +8,7 @@ export function SplitBar({ part, whole, partLabel, restLabel, ariaLabel }: {
   const share = whole > 0 ? (part / whole) * 100 : 0;
   return (
     <div role="img" aria-label={ariaLabel}>
-      <div className="flex" style={{ height: t.bar.thickness, gap: t.bar.gap }}>
+      <div className="ins-grow-x flex" style={{ height: t.bar.thickness, gap: t.bar.gap }}>
         {share > 0 && <span className="h-full rounded-l" style={{ width: `${share}%`, background: t.color.hi }} />}
         {share < 100 && <span className="h-full flex-1 rounded-r" style={{ background: t.color.ctx }} />}
       </div>

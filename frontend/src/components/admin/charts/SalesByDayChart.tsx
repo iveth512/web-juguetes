@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatPrice } from '@/lib/utils';
 import type { SalesDay } from '@/types/admin';
-import { CHART_COLOR, formatCompactCOP, formatDay, niceTicks } from './format';
+import { CHART_COLOR, CHART_CONTEXT, formatCompactCOP, formatDay, niceTicks } from './format';
 
 const HEIGHT = 240;
-const MARGIN = { top: 12, right: 8, bottom: 28, left: 64 };
+const MARGIN = { top: 28, right: 8, bottom: 28, left: 64 };
 const MAX_BAR = 24;
 const GAP = 2;
 const RADIUS = 4;
@@ -42,6 +42,8 @@ export function SalesByDayChart({ days }: { days: SalesDay[] }) {
   // Label ~6 evenly spaced days so the axis never crowds.
   const labelEvery = Math.max(1, Math.ceil(days.length / Math.max(2, Math.floor(plotW / 80))));
   const total = values.reduce((a, b) => a + b, 0);
+  // One highlighted mark: the best day, labelled directly.
+  const peak = values.indexOf(Math.max(...values));
   const activeDay = active !== null ? days[active] : null;
 
   return (
@@ -55,7 +57,7 @@ export function SalesByDayChart({ days }: { days: SalesDay[] }) {
       >
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)} stroke="var(--color-border)" strokeWidth={1} />
+            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)} stroke="var(--ins-grid)" strokeWidth={1} />
             <text x={MARGIN.left - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--color-text-muted)">
               {formatCompactCOP(t)}
             </text>
@@ -71,9 +73,24 @@ export function SalesByDayChart({ days }: { days: SalesDay[] }) {
               {h > 0 && (
                 <path
                   d={columnPath(x, y(v), barW, h)}
-                  fill={CHART_COLOR}
+                  fill={i === peak ? CHART_COLOR : CHART_CONTEXT}
                   opacity={active === null || active === i ? 1 : 0.45}
+                  className="ins-grow-y"
+                  style={{ animationDelay: `${Math.min(i * 12, 600)}ms` }}
                 />
+              )}
+              {i === peak && v > 0 && (
+                <text
+                  x={Math.min(Math.max(x + barW / 2, MARGIN.left + 24), width - MARGIN.right - 24)}
+                  y={y(v) - 8}
+                  textAnchor="middle"
+                  fontSize={12}
+                  fontWeight={600}
+                  fill="var(--color-text)"
+                  className="tabular-nums"
+                >
+                  {formatCompactCOP(v)}
+                </text>
               )}
               {/* Hit target: the whole column slot, bigger than the mark */}
               <rect
@@ -109,7 +126,7 @@ export function SalesByDayChart({ days }: { days: SalesDay[] }) {
 
       {activeDay && active !== null && (
         <div
-          className="pointer-events-none absolute z-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-xs shadow-lg"
+          className="pointer-events-none absolute z-10 rounded-lg bg-[var(--color-bg)] px-3 py-2 text-xs shadow-lg"
           style={{
             left: Math.min(Math.max(MARGIN.left + active * slot + slot / 2 - 80, 0), width - 160),
             top: Math.max(y(values[active]) - 72, 0),
@@ -118,7 +135,7 @@ export function SalesByDayChart({ days }: { days: SalesDay[] }) {
         >
           <p className="text-[var(--color-text-muted)]">{formatDay(activeDay.fecha, true)}</p>
           <p className="mt-1 flex items-center gap-2">
-            <span className="inline-block h-0.5 w-3 rounded" style={{ background: CHART_COLOR }} aria-hidden />
+            <span className="inline-block h-0.5 w-3 rounded" style={{ background: active === peak ? CHART_COLOR : CHART_CONTEXT }} aria-hidden />
             <strong className="text-sm text-[var(--color-text)]">{formatPrice(values[active])}</strong>
           </p>
           <p className="text-[var(--color-text-muted)]">{activeDay.pedidos} {activeDay.pedidos === 1 ? 'pedido' : 'pedidos'}</p>

@@ -5,7 +5,7 @@ import { AnalysisView } from '@/components/admin/insights/AnalysisView';
 
 export default function AdminAnalysisPage() {
   return (
-    <AdminShell title="Análisis">
+    <AdminShell title="Análisis" bleed>
       <AnalysisView />
     </AdminShell>
   );

@@ -1,7 +1,9 @@
 // Chart mark color: --color-primary-hover (#E06A10) passes the dataviz
 // validator on both the light (#FFFFFF) and dark (#1E1E32) card surfaces;
 // the lighter brand orange fails the dark-mode lightness band.
-export const CHART_COLOR = 'var(--color-primary-hover)';
+export const CHART_COLOR = 'var(--ins-hi, var(--color-primary-hover))';
+// Context marks: the lilac-purple step, re-pointed per ground by the section that holds the chart.
+export const CHART_CONTEXT = 'var(--ins-2, #6A55B8)';
 
 const compact = new Intl.NumberFormat('es-CO', {
   style: 'currency',

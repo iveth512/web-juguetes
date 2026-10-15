@@ -35,11 +35,20 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export function AdminShell({ title, actions, children }: {
+export function AdminShell({ title, actions, bleed = false, children }: {
   title: string;
   actions?: React.ReactNode;
+  /** Children own their full-width sections and their own h1; the shell only guards access. */
+  bleed?: boolean;
   children: React.ReactNode;
 }) {
+  if (bleed) {
+    return (
+      <ProtectedRoute>
+        <AdminGuard>{children}</AdminGuard>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
