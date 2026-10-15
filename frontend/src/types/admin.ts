@@ -43,7 +43,11 @@ export interface DateRange {
 export interface DashboardSummary extends DateRange {
   ventas_total: string;
   pedidos: number;
+  /** Net product sales: subtotal minus discounts, shipping excluded. */
   ticket_promedio: string;
+  envios_cobrados: string;
+  descuentos: string;
+  total_cobrado: string;
   unidades_vendidas: number;
   clientes: number;
   pedidos_pendientes_pago: number;
@@ -96,3 +100,56 @@ export interface AdminOrder {
 }
 
 export type AdminOrderPage = PaginatedResponse<AdminOrder>;
+
+export type ShippableStatus = 'shipped' | 'delivered';
+
+export interface AdminOrderUpdate {
+  status: ShippableStatus;
+  tracking_number?: string;
+  shipping_carrier?: string;
+}
+
+export interface ProductMargin {
+  product_id: string;
+  nombre: string;
+  franquicia: string;
+  unidades: number;
+  ingresos: string;
+  /** Null when the product has no recorded import cost. */
+  costo: string | null;
+  utilidad: string | null;
+  margen_pct: number | null;
+}
+
+export interface CouponGroup {
+  pedidos: number;
+  ticket_promedio: string;
+  unidades_promedio: number;
+}
+
+export interface DashboardInsights extends DateRange {
+  dias: number;
+  /** Sorted by profit, highest first; products without cost last. */
+  margen_por_producto: ProductMargin[];
+  utilidad_total: string;
+  margen_promedio_pct: number | null;
+  /** 0 = Monday. */
+  por_dia_semana: { dia: number; pedidos: number; ingresos: string }[];
+  /** Bogotá time. */
+  por_hora: { hora: number; pedidos: number; ingresos: string }[];
+  subtotales: string[];
+  umbral_envio_gratis: string | null;
+  cupones: { con: CouponGroup; sin: CouponGroup };
+  clientes: { total: number; recurrentes: number; ingresos_recurrentes: string };
+  por_ciudad: { ciudad: string; pedidos: number; ingresos: string; ticket_promedio: string }[];
+  por_franquicia: { franquicia: string; ingresos: string; unidades: number; productos_activos: number }[];
+  inventario_dormido: {
+    product_id: string;
+    nombre: string;
+    stock: number;
+    valor_precio: string;
+    valor_costo: string | null;
+    dias_sin_venta: number;
+  }[];
+  cobertura: { product_id: string; nombre: string; stock: number; unidades_por_dia: number; dias_cobertura: number }[];
+}

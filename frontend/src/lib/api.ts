@@ -13,8 +13,11 @@ import type {
 import type { User } from "@/types/auth";
 import type {
   AdminOptions,
+  AdminOrder,
   AdminOrderPage,
+  AdminOrderUpdate,
   AdminProduct,
+  DashboardInsights,
   DashboardSummary,
   DateRange,
   SalesByDay,
@@ -32,9 +35,12 @@ function getBaseUrl(): string {
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /** Per-field validation messages (DRF 400 bodies), when the caller asked for them. */
+  fields: Record<string, string>;
+  constructor(status: number, message: string, fields: Record<string, string> = {}) {
     super(message);
     this.status = status;
+    this.fields = fields;
   }
 }
 
@@ -360,6 +366,7 @@ export function adminListProducts(params: {
   q?: string;
   estado?: string;
   orden?: string;
+  franquicia?: string;
   page?: number;
 }): Promise<PaginatedResponse<AdminProduct>> {
   return fetchApi<PaginatedResponse<AdminProduct>>(`/admin/products/${toQuery(params)}`);
@@ -393,6 +400,30 @@ export function getSalesByDay(range: Partial<DateRange>): Promise<SalesByDay> {
 
 export function getSalesByProduct(range: Partial<DateRange> & { limite?: number }): Promise<SalesByProduct> {
   return fetchApi<SalesByProduct>(`/admin/dashboard/sales-by-product/${toQuery(range)}`);
+}
+
+export function getDashboardInsights(range: DateRange): Promise<DashboardInsights> {
+  return fetchApi<DashboardInsights>(`/admin/dashboard/insights/${toQuery({ ...range })}`);
+}
+
+/** Moves a sale forward: paid → shipped → delivered. */
+export async function adminUpdateOrder(orderId: string, data: AdminOrderUpdate): Promise<AdminOrder> {
+  const res = await request(`/admin/orders/${orderId}/`, { method: 'PATCH', body: JSON.stringify(data) });
+  if (res.ok) return res.json();
+  const message = await errorMessage(res.clone());
+  const fields: Record<string, string> = {};
+  try {
+    const body = await res.json();
+    if (body && typeof body === 'object') {
+      for (const [k, v] of Object.entries(body)) {
+        const text = Array.isArray(v) ? v[0] : v;
+        if (typeof text === 'string') fields[k] = text;
+      }
+    }
+  } catch {
+    // not JSON
+  }
+  throw new ApiError(res.status, message, fields);
 }
 
 export function adminListOrders(params: Partial<DateRange> & { estado?: string; q?: string; page?: number }): Promise<AdminOrderPage> {

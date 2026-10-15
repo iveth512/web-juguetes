@@ -1,15 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { adminCardClass, adminInputClass } from '@/components/admin/AdminShell';
 import { formatDay } from '@/components/admin/charts/format';
 import { formatPrice } from '@/lib/utils';
-import type { AdminOrder, AdminProduct, DateRange, SalesByProduct } from '@/types/admin';
-import { BarChart, Delta, Dumbbell, Histogram, Legend, SplitBar, StatTile, chartTokens } from './charts';
+import type { AdminProduct, DashboardInsights, DashboardSummary, DateRange } from '@/types/admin';
+import { BarChart, Delta, Dumbbell, Histogram, Legend, SplitBar, StatTile, chartTokens, type Tone } from './charts';
 import {
-  FREE_SHIPPING_THRESHOLD, STOCKOUT_HORIZON_DAYS, WEEKDAYS, WEEKDAYS_LONG, WEEKDAYS_ONE,
-  cities, dormantInventory, kpis, formatPct, franchises, pareto, peakBlock, pct, rangeDays, repeatCustomers,
-  shippingThreshold, soldNameSet, stockCoverage, timing,
+  LOW_MARGIN_PCT, MIN_COUPON_ORDERS, STOCKOUT_HORIZON_DAYS, WEEKDAYS, WEEKDAYS_LONG, WEEKDAYS_ONE,
+  catalogSize, cities, coupons, dormantInventory, formatPct, franchises, kpis, margins, num, pareto, peakBlock, pct,
+  rangeDays, repeatCustomers, shippingThreshold, stockCoverage, timing,
 } from './compute';
 import { DataTable, InsightCard, InsightSkeleton } from './InsightCard';
 import { useInsightsData } from './useInsightsData';
@@ -27,10 +27,12 @@ function presetRange(days: number): DateRange {
 }
 
 const PRESETS = [7, 30, 90];
+const MAX_RANGE_DAYS = 366;
 const MIN_ORDERS_FOR_PATTERNS = 10;
 // Every product is a Funko Pop!, so charts drop the shared prefix to keep names readable.
 const short = (name: string) => name.replace(/^Funko Pop!\s*/i, '');
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString('es-CO')} ${n === 1 ? one : many}`;
+const list = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}` : names[0] ?? '');
 
 // ---------- KPI tiles ----------
 
@@ -42,13 +44,20 @@ function Comparison({ now, before, days }: { now: number; before: number | undef
   return <Delta change={((now - before) / before) * 100} suffix={`vs. ${days} días anteriores`} />;
 }
 
-function KpiRow({ orders, prevOrders, days }: { orders: AdminOrder[]; prevOrders?: AdminOrder[]; days: number }) {
-  const now = kpis(orders);
-  const prev = prevOrders ? kpis(prevOrders) : undefined;
-  const repeat = repeatCustomers(orders);
+function KpiRow({ summary, prevSummary, insights, days }: {
+  summary: DashboardSummary; prevSummary?: DashboardSummary; insights: DashboardInsights; days: number;
+}) {
+  const now = kpis(summary);
+  const prev = prevSummary ? kpis(prevSummary) : undefined;
+  const repeat = repeatCustomers(insights);
+  const m = margins(insights);
+  const profit = num(insights.utilidad_total);
+  const costNote = m.missingCost.length
+    ? `Sin contar ${plural(m.missingCost.length, 'producto sin costo', 'productos sin costo')} registrado`
+    : 'Ingresos por productos menos su costo de importación';
   return (
-    <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-      <StatTile label="Ingresos por productos" value={formatPrice(now.revenue)}>
+    <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
+      <StatTile label="Ventas netas" value={formatPrice(now.revenue)}>
         <Comparison now={now.revenue} before={prev?.revenue} days={days} />
       </StatTile>
       <StatTile label="Pedidos" value={now.orders.toLocaleString('es-CO')}>
@@ -57,9 +66,17 @@ function KpiRow({ orders, prevOrders, days }: { orders: AdminOrder[]; prevOrders
       <StatTile label="Ticket promedio" value={formatPrice(now.avgTicket)}>
         <Comparison now={now.avgTicket} before={prev?.avgTicket} days={days} />
       </StatTile>
+      <StatTile label="Utilidad total" value={m.costed.length ? formatPrice(profit) : '—'}>
+        <p className="mt-2 text-xs text-[var(--color-text-muted)]">{m.costed.length ? costNote : 'Ningún producto vendido tiene costo registrado'}</p>
+      </StatTile>
+      <StatTile label="Margen promedio" value={insights.margen_promedio_pct === null ? '—' : formatPct(insights.margen_promedio_pct)}>
+        <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+          {insights.margen_promedio_pct === null ? 'Sin costos para calcularlo' : 'De cada $100 vendidos en productos con costo'}
+        </p>
+      </StatTile>
       <StatTile label="Clientes que repiten" value={repeat.customers ? `${repeat.repeat} de ${repeat.customers}` : '—'}>
         <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-          {repeat.customers ? `Dejan el ${formatPct(repeat.repeatRevenueShare)} de los ingresos` : 'Sin compradores en el periodo'}
+          {repeat.customers ? `Dejan el ${formatPct(repeat.repeatRevenueShare)} de las ventas netas` : 'Sin compradores en el periodo'}
         </p>
       </StatTile>
     </div>
@@ -68,22 +85,17 @@ function KpiRow({ orders, prevOrders, days }: { orders: AdminOrder[]; prevOrders
 
 // ---------- Insights ----------
 
-function Insights({ range, orders, products, byProduct }: {
-  range: DateRange; orders: AdminOrder[]; products: AdminProduct[]; byProduct: SalesByProduct;
-}) {
-  const days = rangeDays(range);
-  const top = byProduct.productos;
-  const soldNames = useMemo(() => soldNameSet(orders), [orders]);
-  const soldIds = useMemo(() => new Set(top.map((p) => p.product_id)), [top]);
-  const activeCount = products.filter((p) => p.is_active).length;
-
-  const dormant = dormantInventory(products, soldIds, soldNames);
-  const coverage = stockCoverage(orders, products, range, top);
-  const shipping = shippingThreshold(orders, products, soldNames);
-  const concentration = pareto(top, orders, activeCount, soldNames);
-  const franchiseRows = franchises(products, top);
-  const time = timing(orders);
-  const cityRows = cities(orders);
+function Insights({ insights, products }: { insights: DashboardInsights; products: AdminProduct[] }) {
+  const days = insights.dias;
+  const m = margins(insights);
+  const dormant = dormantInventory(insights, products);
+  const coverage = stockCoverage(insights);
+  const shipping = shippingThreshold(insights, m);
+  const concentration = pareto(m, catalogSize(insights));
+  const franchiseRows = franchises(insights);
+  const time = timing(insights);
+  const cityRows = cities(insights);
+  const coupon = coupons(insights);
 
   // 1. Dormant inventory
   const dormantShare = pct(dormant.dormantValue, dormant.totalStockValue);
@@ -95,11 +107,14 @@ function Insights({ range, orders, products, byProduct }: {
         ? `${dormant.dormantCount} de tus ${dormant.activeCount} productos no vendieron ni una unidad: ${formatPrice(dormant.dormantValue)} quietos en bodega`
         : 'Todos tus productos con stock vendieron al menos una unidad'}
       context={dormant.dormantCount ? (
-        <>Son {plural(dormant.dormantUnits, 'unidad', 'unidades')} sin movimiento en {days} días: el {formatPct(dormantShare)} del valor de tu inventario, a precio de venta.</>
+        <>
+          Son {plural(dormant.dormantUnits, 'unidad', 'unidades')} sin movimiento en {days} días: el {formatPct(dormantShare)} del valor de tu inventario, a precio de venta.
+          {dormant.dormantCost > 0 && <> Te costaron {formatPrice(dormant.dormantCost)}{dormant.missingCost ? ` (sin contar ${plural(dormant.missingCost, 'producto sin costo registrado', 'productos sin costo registrado')})` : ''}.</>}
+        </>
       ) : undefined}
       action="Arma combos o un descuento por tiempo limitado con los primeros de la lista y no recompres esas referencias hasta que roten."
       empty={dormant.dormantCount ? undefined : 'No hay inventario dormido en este periodo.'}
-      table={<DataTable caption="Productos sin ventas en el periodo" head={['Producto', 'Stock', 'Valor']} rows={dormant.items.map((d) => [d.name, d.stock, formatPrice(d.value)])} />}
+      table={<DataTable caption="Productos sin ventas en el periodo" head={['Producto', 'Stock', 'Valor', 'Costo', 'Días sin venta']} rows={dormant.items.map((d) => [d.name, d.stock, formatPrice(d.value), d.cost === null ? 'Sin costo' : formatPrice(d.cost), d.days])} />}
     >
       <SplitBar
         part={dormant.dormantValue}
@@ -111,7 +126,10 @@ function Insights({ range, orders, products, byProduct }: {
       <p className="mb-3 mt-6 text-sm font-semibold text-[var(--color-text)]">Dónde está el dinero quieto</p>
       <BarChart
         ariaLabel="Productos sin ventas con más dinero en inventario"
-        rows={dormantTop.map((d) => ({ key: d.id, label: short(d.name), value: d.value, valueLabel: formatPrice(d.value), tone: 'hi', detail: `${plural(d.stock, 'unidad', 'unidades')} en stock` }))}
+        rows={dormantTop.map((d) => ({
+          key: d.id, label: short(d.name), value: d.value, valueLabel: formatPrice(d.value), tone: 'hi',
+          detail: `${plural(d.stock, 'unidad', 'unidades')} en stock · ${plural(d.days, 'día', 'días')} sin venderse`,
+        }))}
       />
       {dormant.items.length > dormantTop.length && (
         <p className="mt-3 text-xs text-[var(--color-text-muted)]">
@@ -127,16 +145,16 @@ function Insights({ range, orders, products, byProduct }: {
   const coverageCard = (
     <InsightCard
       id="ins-agotarse"
-      headline={!firstRisk ? 'Aún no hay ventas recientes para medir la cobertura'
+      headline={!firstRisk ? 'Aún no hay ventas para medir la cobertura'
         : coverage.atRisk.length
-          ? `${short(firstRisk.name)} ${firstRisk.stock <= 0 ? 'ya está agotado' : `se agota en ~${Math.round(firstRisk.days)} días`}${coverage.atRisk.length > 1 ? ` y ${plural(coverage.atRisk.length - 1, 'éxito más baja', 'éxitos más bajan')} de ${STOCKOUT_HORIZON_DAYS} días` : ''}`
-          : `Ningún éxito de ventas se agota antes de ${STOCKOUT_HORIZON_DAYS} días; el más justo es ${short(firstRisk.name)} (~${Math.round(firstRisk.days)} días)`}
-      context={<>Cobertura = stock actual ÷ ritmo de venta de los últimos {coverage.windowDays} días. Tus productos más vendidos, del más urgente al más holgado.</>}
+          ? `${short(firstRisk.name)} ${firstRisk.stock <= 0 ? 'ya está agotado' : `se agota en ~${Math.round(firstRisk.days)} días`}${coverage.atRisk.length > 1 ? ` y ${plural(coverage.atRisk.length - 1, 'producto más baja', 'productos más bajan')} de ${STOCKOUT_HORIZON_DAYS} días` : ''}`
+          : `Ningún producto vendido se agota antes de ${STOCKOUT_HORIZON_DAYS} días; el más justo es ${short(firstRisk.name)} (~${Math.round(firstRisk.days)} días)`}
+      context={<>Cobertura = stock actual ÷ ritmo de venta de los {coverage.windowDays} días del periodo. Del más urgente al más holgado.</>}
       action={coverage.atRisk.length
-        ? `Pide ya la reposición de ${coverage.atRisk.slice(0, 3).map((i) => short(i.name)).join(', ')}: si la importación tarda más que su cobertura, te quedas sin tus productos estrella.`
+        ? `Pide ya la reposición de ${list(coverage.atRisk.slice(0, 3).map((i) => short(i.name)))}: si la importación tarda más que su cobertura, te quedas sin lo que se vende.`
         : `Revisa esta lista cada semana y repón cuando un producto baje de ${STOCKOUT_HORIZON_DAYS} días de cobertura.`}
-      empty={firstRisk ? undefined : `No hubo ventas en los últimos ${coverage.windowDays} días del periodo.`}
-      table={<DataTable caption="Cobertura de stock" head={['Producto', 'Stock', `Vendidas (${coverage.windowDays} d)`, 'Cobertura']} rows={coverage.items.map((i) => [i.name, i.stock, i.units, daysLabel(i.days, i.stock)])} />}
+      empty={firstRisk ? undefined : `No hubo ventas en los ${coverage.windowDays} días del periodo.`}
+      table={<DataTable caption="Cobertura de stock" head={['Producto', 'Stock', 'Vendidas por día', 'Cobertura']} rows={coverage.items.map((i) => [i.name, i.stock, i.perDay.toLocaleString('es-CO'), daysLabel(i.days, i.stock)])} />}
     >
       <BarChart
         ariaLabel={`Días de cobertura por producto; ${coverage.atRisk.length} por debajo de ${STOCKOUT_HORIZON_DAYS} días`}
@@ -148,24 +166,106 @@ function Insights({ range, orders, products, byProduct }: {
           value: Math.min(i.days, 120),
           valueLabel: daysLabel(i.days, i.stock),
           tone: i.days < STOCKOUT_HORIZON_DAYS ? 'hi' : 'ctx',
-          detail: `${plural(i.stock, 'unidad', 'unidades')} en stock · ${plural(i.units, 'vendida', 'vendidas')} en ${coverage.windowDays} días`,
+          detail: `${plural(i.stock, 'unidad', 'unidades')} en stock · ${i.perDay.toLocaleString('es-CO')} vendidas por día`,
         }))}
       />
     </InsightCard>
   );
 
-  // 3. Free-shipping threshold
-  const gap = FREE_SHIPPING_THRESHOLD - shipping.nearFrom;
-  const thresholdIndex = shipping.bins.findIndex((b) => b.from >= FREE_SHIPPING_THRESHOLD);
+  // 3. Margin per product
+  const { bestSeller, topProfit, topMargin } = m;
+  const counterintuitive = Boolean(topProfit && bestSeller && topProfit.id !== bestSeller.id && topProfit.units < bestSeller.units);
+  const marginHeadline = !topProfit || !bestSeller
+    ? 'Sin costos registrados no se puede medir cuánto deja cada producto'
+    : counterintuitive
+      ? `${short(topProfit.name)} deja más utilidad que ${short(bestSeller.name)} aunque vende menos`
+      : topProfit.id === bestSeller.id
+        ? `${short(bestSeller.name)} es tu más vendido y también el que más utilidad deja: ${formatPrice(topProfit.profit)}`
+        : `${short(topProfit.name)} es el producto que más utilidad deja: ${formatPrice(topProfit.profit)}`;
+  const lowNames = m.low.slice(0, 2).map((r) => short(r.name));
+  const profitRows = m.costed.slice(0, 10);
+  const lowRows = [...m.costed].sort((a, b) => a.marginPct - b.marginPct).slice(0, 5);
+  const marginScale = Math.max(LOW_MARGIN_PCT * 2, ...lowRows.map((r) => r.marginPct));
+  const marginCard = (
+    <InsightCard
+      id="ins-margen"
+      headline={marginHeadline}
+      context={topProfit && bestSeller ? (
+        <>
+          {counterintuitive && bestSeller.unitProfit !== null && (
+            <>{formatPrice(topProfit.profit)} con {plural(topProfit.units, 'unidad', 'unidades')} frente a {formatPrice(bestSeller.profit ?? 0)} con {bestSeller.units}: cada unidad deja {formatPrice(topProfit.unitProfit)} contra {formatPrice(bestSeller.unitProfit)}. </>
+          )}
+          {m.losses.length
+            ? <>{plural(m.losses.length, 'producto se vendió', 'productos se vendieron')} a pérdida. </>
+            : m.low.length
+              ? <>{plural(m.low.length, 'producto deja', 'productos dejan')} menos del {LOW_MARGIN_PCT} % de margen; el más bajo es {short(m.low[0].name)} ({formatPct(m.low[0].marginPct)}). </>
+              : <>Todos los productos vendidos dejan al menos el {LOW_MARGIN_PCT} % de margen. </>}
+          Utilidad = ingresos por producto menos su costo de importación.
+          {m.missingCost.length > 0 && <> {plural(m.missingCost.length, 'producto vendido no tiene', 'productos vendidos no tienen')} costo registrado y no entra{m.missingCost.length === 1 ? '' : 'n'} en el cálculo.</>}
+        </>
+      ) : undefined}
+      action={!topMargin ? undefined
+        : m.losses.length
+          ? `Revisa ya el precio de ${list(m.losses.slice(0, 2).map((r) => short(r.name)))}: cada venta te cuesta plata.`
+          : m.low.length
+            ? `Sube el precio de ${list(lowNames)} o deja de pautarlos, y pon ese presupuesto en ${short(topMargin.name)}, que deja el ${formatPct(topMargin.marginPct)} de cada venta.`
+            : `Pon tu pauta en ${short(topMargin.name)}: deja el ${formatPct(topMargin.marginPct)} de cada venta, el margen más alto del periodo.`}
+      empty={m.costed.length ? undefined : m.rows.length
+        ? `${plural(m.rows.length, 'producto vendido no tiene', 'productos vendidos no tienen')} costo registrado. Regístralo en los lotes de importación para ver la utilidad.`
+        : 'Sin ventas en el periodo.'}
+      table={<DataTable caption="Utilidad y margen por producto" head={['Producto', 'Unidades', 'Ingresos', 'Utilidad', 'Margen']} rows={m.rows.map((r) => [
+        r.name, r.units, formatPrice(r.revenue), r.profit === null ? 'Sin costo' : formatPrice(r.profit), r.marginPct === null ? '—' : formatPct(r.marginPct),
+      ])} />}
+    >
+      <Legend items={[
+        { tone: 'hi', label: 'Más utilidad' },
+        ...(bestSeller && topProfit && bestSeller.id !== topProfit.id ? [{ tone: 'second' as Tone, label: 'Más vendido' }] : []),
+        { tone: 'ctx', label: 'Resto' },
+      ]} />
+      <BarChart
+        ariaLabel={`Utilidad por producto; ${topProfit ? short(topProfit.name) : ''} deja la mayor`}
+        rows={profitRows.map((r) => ({
+          key: r.id, label: short(r.name), value: Math.max(0, r.profit), valueLabel: formatPrice(r.profit),
+          tone: (r.id === topProfit?.id ? 'hi' : r.id === bestSeller?.id ? 'second' : 'ctx') as Tone,
+          detail: `${plural(r.units, 'unidad', 'unidades')} · margen ${formatPct(r.marginPct)}`,
+        }))}
+      />
+      {bestSeller && !profitRows.some((r) => r.id === bestSeller.id) && (
+        <p className="mt-3 text-xs text-[var(--color-text-muted)]">
+          El más vendido, {short(bestSeller.name)} ({plural(bestSeller.units, 'unidad', 'unidades')}), no está entre los 10 que más utilidad dejan.
+        </p>
+      )}
+      <p className="mb-3 mt-6 text-sm font-semibold text-[var(--color-text)]">Margen más bajo</p>
+      <BarChart
+        ariaLabel={`Los ${lowRows.length} productos con menor margen`}
+        max={marginScale}
+        marker={{ value: LOW_MARGIN_PCT, label: `${LOW_MARGIN_PCT} %` }}
+        rows={lowRows.map((r) => ({
+          key: r.id, label: short(r.name), value: Math.max(0, r.marginPct), valueLabel: formatPct(r.marginPct),
+          tone: (r.marginPct < LOW_MARGIN_PCT ? 'hi' : 'ctx') as Tone,
+          detail: `${formatPrice(r.profit)} de utilidad con ${plural(r.units, 'unidad', 'unidades')}`,
+        }))}
+      />
+    </InsightCard>
+  );
+
+  // 4. Free-shipping threshold
+  const threshold = shipping.threshold ?? 0;
+  const gap = threshold - shipping.nearFrom;
+  const thresholdIndex = shipping.bins.findIndex((b) => b.from >= threshold);
   const shippingCard = (
     <InsightCard
       id="ins-envio"
-      headline={shipping.near
-        ? `${plural(shipping.near, 'pedido', 'pedidos')} (${formatPct(pct(shipping.near, shipping.orders))}) se quedaron a menos de ${formatPrice(gap)} del envío gratis`
-        : `Ningún pedido quedó a menos de ${formatPrice(gap)} del envío gratis`}
-      context={<>El envío es gratis desde {formatPrice(FREE_SHIPPING_THRESHOLD)} y un Funko típico cuesta {formatPrice(shipping.typicalPrice)}: a esos clientes les faltaba un solo producto{shipping.nearShippingPaid > 0 ? ` y pagaron ${formatPrice(shipping.nearShippingPaid)} en envíos` : ''}. Ya califica el {formatPct(pct(shipping.qualifying, shipping.orders))} de los pedidos.</>}
+      headline={shipping.threshold === null ? 'No hay un envío gratis configurado'
+        : shipping.near
+          ? `${plural(shipping.near, 'pedido', 'pedidos')} (${formatPct(pct(shipping.near, shipping.orders))}) se quedaron a menos de ${formatPrice(gap)} del envío gratis`
+          : `Ningún pedido quedó a menos de ${formatPrice(gap)} del envío gratis`}
+      context={shipping.threshold === null ? undefined : (
+        <>El envío es gratis desde {formatPrice(threshold)} y un Funko típico cuesta {formatPrice(shipping.typicalPrice)}: a esos clientes les faltaba un solo producto. Ya califica el {formatPct(pct(shipping.qualifying, shipping.orders))} de los pedidos.</>
+      )}
       action={`Muestra en el carrito cuánto falta para el envío gratis y sugiere un Funko de unos ${formatPrice(shipping.typicalPrice)}: cada cliente que lo agregue es una venta más.`}
-      empty={shipping.orders < MIN_ORDERS_FOR_PATTERNS ? `Hacen falta al menos ${MIN_ORDERS_FOR_PATTERNS} pedidos para ver cómo se reparten.` : undefined}
+      empty={shipping.threshold === null ? 'Configura un umbral de envío gratis en las zonas de envío para medir este hallazgo.'
+        : shipping.orders < MIN_ORDERS_FOR_PATTERNS ? `Hacen falta al menos ${MIN_ORDERS_FOR_PATTERNS} pedidos para ver cómo se reparten.` : undefined}
       table={<DataTable caption="Pedidos por valor de productos" head={['Valor de productos', 'Pedidos']} rows={shipping.bins.map((b) => [`${formatPrice(b.from)} – ${formatPrice(b.to - 1)}`, b.count])} />}
     >
       <Legend items={[
@@ -190,11 +290,56 @@ function Insights({ range, orders, products, byProduct }: {
     </InsightCard>
   );
 
-  // 4. Concentration
+  // 5. Coupons
+  const couponDirection = coupon.ticketChange >= 0 ? 'más' : 'menos';
+  const couponCard = (
+    <InsightCard
+      id="ins-cupones"
+      headline={coupon.withOrders === 0 || coupon.withoutOrders === 0
+        ? coupon.withOrders === 0 ? 'Ningún pedido usó cupón en el periodo' : 'Todos los pedidos del periodo usaron cupón'
+        : Math.round(Math.abs(coupon.ticketChange)) === 0
+          ? `Los pedidos con cupón dejan lo mismo que los demás: ${formatPrice(coupon.withTicket)} netos`
+          : `Los pedidos con cupón dejan ${formatPrice(coupon.withTicket)} netos, un ${formatPct(Math.abs(coupon.ticketChange))} ${couponDirection} que los que no lo usan`}
+      context={coupon.withOrders > 0 && coupon.withoutOrders > 0 ? (
+        <>
+          {plural(coupon.withOrders, 'pedido usó', 'pedidos usaron')} cupón ({formatPct(coupon.share)}). Con cupón se llevan {coupon.withUnits.toLocaleString('es-CO')} productos por pedido; sin cupón, {coupon.withoutUnits.toLocaleString('es-CO')}. Ticket neto = productos menos descuento, sin envío.
+          {coupon.fewData && <strong className="mt-2 block font-semibold text-[var(--color-text)]">Pocos datos: con menos de {MIN_COUPON_ORDERS} pedidos con cupón, tómalo como una señal, no como una conclusión.</strong>}
+        </>
+      ) : undefined}
+      action={coupon.ticketChange < 0
+        ? 'El cupón no está subiendo el ticket: ponle un monto mínimo de compra (por ejemplo, cerca del envío gratis) para que el descuento obligue a llevar un producto más.'
+        : 'El cupón acompaña compras más grandes: úsalo en campañas para clientes que ya compraron y mide si repiten.'}
+      empty={coupon.withOrders === 0 ? 'Sin pedidos con cupón no hay con qué comparar.'
+        : coupon.withoutOrders === 0 ? 'Sin pedidos sin cupón no hay con qué comparar.' : undefined}
+      table={<DataTable caption="Pedidos con y sin cupón" head={['', 'Pedidos', 'Ticket neto', 'Productos por pedido']} rows={[
+        ['Con cupón', coupon.withOrders, formatPrice(coupon.withTicket), coupon.withUnits.toLocaleString('es-CO')],
+        ['Sin cupón', coupon.withoutOrders, formatPrice(coupon.withoutTicket), coupon.withoutUnits.toLocaleString('es-CO')],
+      ]} />}
+    >
+      <p className="mb-3 text-sm font-semibold text-[var(--color-text)]">Ticket neto promedio</p>
+      <BarChart
+        ariaLabel={`Ticket neto: ${formatPrice(coupon.withTicket)} con cupón y ${formatPrice(coupon.withoutTicket)} sin cupón`}
+        rows={[
+          { key: 'con', label: 'Con cupón', value: coupon.withTicket, valueLabel: formatPrice(coupon.withTicket), tone: 'hi', detail: plural(coupon.withOrders, 'pedido', 'pedidos') },
+          { key: 'sin', label: 'Sin cupón', value: coupon.withoutTicket, valueLabel: formatPrice(coupon.withoutTicket), tone: 'ctx', detail: plural(coupon.withoutOrders, 'pedido', 'pedidos') },
+        ]}
+      />
+      <p className="mb-3 mt-6 text-sm font-semibold text-[var(--color-text)]">Productos por pedido</p>
+      <BarChart
+        ariaLabel={`Productos por pedido: ${coupon.withUnits} con cupón y ${coupon.withoutUnits} sin cupón`}
+        rows={[
+          { key: 'con', label: 'Con cupón', value: coupon.withUnits, valueLabel: coupon.withUnits.toLocaleString('es-CO'), tone: 'hi' },
+          { key: 'sin', label: 'Sin cupón', value: coupon.withoutUnits, valueLabel: coupon.withoutUnits.toLocaleString('es-CO'), tone: 'ctx' },
+        ]}
+      />
+    </InsightCard>
+  );
+
+  // 6. Concentration
   const paretoLimit = Math.min(Math.max(15, concentration.coreCount + 3), 30);
   const paretoRows = concentration.items.slice(0, paretoLimit);
-  const restCount = concentration.items.length - paretoRows.length + concentration.tailCount;
-  const restRevenue = concentration.items.slice(paretoLimit).reduce((s, i) => s + i.revenue, 0) + concentration.tailRevenue;
+  const restCount = concentration.items.length - paretoRows.length;
+  const restRevenue = concentration.items.slice(paretoLimit).reduce((s, i) => s + i.revenue, 0);
   const paretoCard = (
     <InsightCard
       id="ins-pareto"
@@ -215,7 +360,7 @@ function Insights({ range, orders, products, byProduct }: {
         rows={[
           ...paretoRows.map((i) => ({
             key: i.id, label: short(i.name), value: i.revenue, valueLabel: formatPrice(i.revenue),
-            tone: (i.core ? 'hi' : 'ctx') as 'hi' | 'ctx', detail: `Acumulado: ${formatPct(i.cumulative)} de los ingresos`,
+            tone: (i.core ? 'hi' : 'ctx') as Tone, detail: `Acumulado: ${formatPct(i.cumulative)} de los ingresos`,
           })),
           ...(restCount > 0 ? [{ key: 'rest', label: `Otros ${restCount} productos`, value: restRevenue, valueLabel: formatPrice(restRevenue), tone: 'ctx' as const }] : []),
         ]}
@@ -223,7 +368,7 @@ function Insights({ range, orders, products, byProduct }: {
     </InsightCard>
   );
 
-  // 5. Franchises
+  // 7. Franchises
   const ranked = franchiseRows.filter((f) => f.products > 0 || f.revenue > 0);
   const byGap = [...ranked].sort((a, b) => b.gap - a.gap);
   const best = byGap[0];
@@ -237,7 +382,7 @@ function Insights({ range, orders, products, byProduct }: {
         ? `${best.name} es el ${formatPct(best.catalogShare)} del catálogo y trae el ${formatPct(best.revenueShare)} de los ingresos; ${worst.name} ocupa el ${formatPct(worst.catalogShare)} y vende el ${formatPct(worst.revenueShare)}`
         : 'Aún no hay ventas para comparar franquicias'}
       context="Cada fila compara el peso de la franquicia en tu catálogo activo con su peso en los ingresos del periodo. Se muestran las que más se desvían."
-      action={overs.length && worst ? `Amplía el surtido de ${overs.join(' y ')}; con ${worst.name}, no repongas hasta liquidar lo que tienes.` : undefined}
+      action={overs.length && worst ? `Amplía el surtido de ${list(overs)}; con ${worst.name}, no repongas hasta liquidar lo que tienes.` : undefined}
       empty={best && best.gap > 0 ? undefined : 'Sin ventas en el periodo.'}
       table={<DataTable caption="Franquicias: catálogo vs. ingresos" head={['Franquicia', 'Productos', 'Catálogo', 'Ingresos']} rows={byGap.map((f) => [f.name, f.products, formatPct(f.catalogShare), formatPct(f.revenueShare)])} />}
     >
@@ -257,7 +402,7 @@ function Insights({ range, orders, products, byProduct }: {
     </InsightCard>
   );
 
-  // 6. When they buy
+  // 8. When they buy
   const peakDay = time.byDay.indexOf(Math.max(...time.byDay));
   const block = peakBlock(time.byHour);
   const blockHours = new Set([block.start, (block.start + 1) % 24, (block.start + 2) % 24]);
@@ -265,10 +410,10 @@ function Insights({ range, orders, products, byProduct }: {
   const timingCard = (
     <InsightCard
       id="ins-cuando"
-      headline={`Los ${WEEKDAYS_LONG[peakDay]} traen el ${formatPct(pct(time.byDay[peakDay], orders.length))} de los pedidos; la franja más fuerte va de ${hourLabel(block.start)} a ${hourLabel((block.start + 3) % 24)}`}
-      context={<>{plural(block.count, 'pedido', 'pedidos')} ({formatPct(pct(block.count, orders.length))}) entraron en esas tres horas. Hora de Colombia, según el momento del pago.</>}
+      headline={`Los ${WEEKDAYS_LONG[peakDay]} traen el ${formatPct(pct(time.byDay[peakDay], time.orders))} de los pedidos; la franja más fuerte va de ${hourLabel(block.start)} a ${hourLabel((block.start + 3) % 24)}`}
+      context={<>{plural(block.count, 'pedido', 'pedidos')} ({formatPct(pct(block.count, time.orders))}) entraron en esas tres horas. Hora de Colombia, según el momento del pago.</>}
       action={`Programa lanzamientos, correos y publicaciones para el ${WEEKDAYS_ONE[peakDay]} antes de las ${hourLabel(block.start)}, cuando tus clientes ya están listos para comprar.`}
-      empty={orders.length < MIN_ORDERS_FOR_PATTERNS ? `Hacen falta al menos ${MIN_ORDERS_FOR_PATTERNS} pedidos para ver un patrón.` : undefined}
+      empty={time.orders < MIN_ORDERS_FOR_PATTERNS ? `Hacen falta al menos ${MIN_ORDERS_FOR_PATTERNS} pedidos para ver un patrón.` : undefined}
       table={<DataTable caption="Pedidos por día y hora" head={['Momento', 'Pedidos']} rows={[
         ...WEEKDAYS_LONG.map((d, i) => [d, time.byDay[i]]),
         ...time.byHour.map((c, h) => [`${hourLabel(h)} – ${h}:59`, c]),
@@ -303,7 +448,7 @@ function Insights({ range, orders, products, byProduct }: {
     </InsightCard>
   );
 
-  // 7. Cities
+  // 9. Cities
   const byTicket = [...cityRows].sort((a, b) => b.avgTicket - a.avgTicket);
   const hiCity = byTicket[0];
   const loCity = byTicket[byTicket.length - 1];
@@ -313,10 +458,10 @@ function Insights({ range, orders, products, byProduct }: {
       headline={hiCity && loCity && cityRows.length > 1
         ? `En ${hiCity.name} cada pedido deja ${formatPrice(hiCity.avgTicket)}, un ${formatPct(pct(hiCity.avgTicket - loCity.avgTicket, loCity.avgTicket))} más que en ${loCity.name}`
         : 'Aún no hay suficientes ciudades para comparar'}
-      context={cityRows.length > 1 ? <>{cityRows[0].name} lidera en ventas totales ({formatPct(pct(cityRows[0].revenue, cityRows.reduce((s, c) => s + c.revenue, 0)))}). Ticket = valor de los productos del pedido, sin envío.</> : undefined}
+      context={cityRows.length > 1 ? <>{cityRows[0].name} lidera en ventas totales ({formatPct(pct(cityRows[0].revenue, cityRows.reduce((s, c) => s + c.revenue, 0)))}). Ticket = productos menos descuento, sin envío.</> : undefined}
       action={hiCity ? `Prueba anuncios segmentados en ${hiCity.name}: con el mismo costo por clic, cada venta allí deja más.` : undefined}
       empty={cityRows.length > 1 ? undefined : 'Se necesitan pedidos de al menos dos ciudades.'}
-      table={<DataTable caption="Ventas por ciudad" head={['Ciudad', 'Pedidos', 'Ventas', 'Ticket']} rows={cityRows.map((c) => [c.name, c.orders, formatPrice(c.revenue), formatPrice(c.avgTicket)])} />}
+      table={<DataTable caption="Ventas por ciudad" head={['Ciudad', 'Pedidos', 'Ventas netas', 'Ticket']} rows={cityRows.map((c) => [c.name, c.orders, formatPrice(c.revenue), formatPrice(c.avgTicket)])} />}
     >
       <p className="mb-3 text-sm font-semibold text-[var(--color-text)]">Ticket promedio por ciudad</p>
       <BarChart
@@ -333,7 +478,9 @@ function Insights({ range, orders, products, byProduct }: {
     <>
       {dormantCard}
       {coverageCard}
+      {marginCard}
       {shippingCard}
+      {couponCard}
       {paretoCard}
       {franchiseCard}
       {timingCard}
@@ -363,12 +510,13 @@ export function AnalysisView() {
   const applyCustom = () => {
     if (!draft.desde || !draft.hasta) return setRangeError('Elige ambas fechas.');
     if (draft.desde > draft.hasta) return setRangeError('La fecha inicial no puede ser posterior a la final.');
+    if (rangeDays(draft) > MAX_RANGE_DAYS) return setRangeError(`El periodo puede tener máximo ${MAX_RANGE_DAYS} días.`);
     setRangeError('');
     setPreset(0);
     setRange({ ...draft });
   };
 
-  const { prevOrders, byProduct, orders, products } = data;
+  const { insights, summary, prevSummary, products } = data;
 
   return (
     <div className={`space-y-6 ${chartTokens.varsClass}`}>
@@ -413,17 +561,11 @@ export function AnalysisView() {
         </div>
       )}
 
-      {orders?.capped && (
-        <p className="rounded-lg bg-[var(--color-bg-alt)] p-3 text-sm text-[var(--color-text)]">
-          El periodo tiene {orders.total.toLocaleString('es-CO')} pedidos; el análisis usa los {orders.orders.length.toLocaleString('es-CO')} más recientes. Elige un periodo más corto para verlo completo.
-        </p>
-      )}
-
-      {!(byProduct && orders && products) ? (
+      {!(insights && summary && products) ? (
         !data.error && (
           <div className="space-y-6" aria-busy="true" aria-label="Cargando análisis">
-            <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-              {[0, 1, 2, 3].map((i) => <div key={i} className={`${adminCardClass} h-28 animate-pulse`} />)}
+            <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className={`${adminCardClass} h-28 animate-pulse`} />)}
             </div>
             <InsightSkeleton />
             <InsightSkeleton />
@@ -431,14 +573,14 @@ export function AnalysisView() {
         )
       ) : (
         <div className={`space-y-6 transition-opacity duration-200 ${data.isFetching ? 'opacity-60' : ''}`}>
-          <KpiRow orders={orders.orders} prevOrders={prevOrders?.orders} days={days} />
-          {orders.orders.length === 0 ? (
+          <KpiRow summary={summary} prevSummary={prevSummary} insights={insights} days={days} />
+          {summary.pedidos === 0 ? (
             <div className={`${adminCardClass} px-6 py-12 text-center`}>
               <p className="text-base font-semibold text-[var(--color-text)]">No hay ventas en este periodo.</p>
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">Elige un periodo más largo para ver hallazgos.</p>
             </div>
           ) : (
-            <Insights range={range} orders={orders.orders} products={products} byProduct={byProduct} />
+            <Insights insights={insights} products={products} />
           )}
         </div>
       )}
