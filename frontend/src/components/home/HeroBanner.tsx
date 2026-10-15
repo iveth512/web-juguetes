@@ -88,8 +88,8 @@ export function HeroBanner() {
               }
             >
               <div className="relative">
-                {i === 1 && (
-                  <Sticker tone="green" round tilt={-10} className="absolute -left-5 bottom-12 z-10 h-20 w-20 text-[22px]">
+                {i === 0 && (
+                  <Sticker tone="green" round tilt={-10} className="absolute left-2 top-2 z-10 h-[4.5rem] w-[4.5rem] text-[19px] lg:-left-5 lg:-top-5 lg:h-20 lg:w-20 lg:text-[22px]">
                     ¡100 % original!
                   </Sticker>
                 )}
