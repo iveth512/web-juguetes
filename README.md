@@ -17,7 +17,7 @@ No hace falta instalar Python, Node ni PostgreSQL, ni crear ningún archivo `.en
 docker compose up --build
 ```
 
-La primera vez tarda unos minutos (descarga imágenes e instala dependencias). Cuando el backend muestre `Demo lista`, abre:
+La primera vez tarda unos minutos: descarga imágenes, instala dependencias y compila el frontend en modo producción. Cuando el backend muestre `Demo lista`, abre:
 
 | Qué | Dirección |
 | --- | --- |
@@ -54,7 +54,7 @@ Al arrancar se cargan automáticamente 75 Funko Pop! con fotos propias de cada p
 
 Por defecto el pago usa una **pasarela simulada solo para entorno local**: no hay cobros ni cuentas externas, y el resultado pasa por el mismo procesamiento de notificaciones que la pasarela real. Por seguridad, la pasarela simulada solo funciona con `DEBUG=True`: fuera de desarrollo queda deshabilitada y Django la reporta como error de configuración (`payments.E001`).
 
-La integración real es con [Bold](https://bold.co). Para probarla con tu propia cuenta de pruebas de Bold, copia `backend/.env.example` a `backend/.env`, define `PAYMENTS_PROVIDER=bold` y tus llaves, y cambia `NEXT_PUBLIC_PAYMENT_PROVIDER` a `bold` en `docker-compose.yml`. En local, Bold no puede devolver el resultado a la tienda (exige `https`), así que la prueba completa requiere un dominio con HTTPS.
+La integración real es con [Bold](https://bold.co). Para probarla con tu propia cuenta de pruebas de Bold, copia `backend/.env.example` a `backend/.env`, define `PAYMENTS_PROVIDER=bold` y tus llaves, y cambia el argumento de build `NEXT_PUBLIC_PAYMENT_PROVIDER` a `bold` en `docker-compose.yml` (sección `frontend.build.args`); luego reconstruye con `docker compose up --build frontend`. En local, Bold no puede devolver el resultado a la tienda (exige `https`), así que la prueba completa requiere un dominio con HTTPS.
 
 ## Tests
 
@@ -73,7 +73,7 @@ backend/    Django 5 + Django REST Framework (API en /api/v1/)
   apps/accounts   Usuarios, login, registro y favoritos
   apps/shipping   Zonas y costos de envío
   apps/reviews    Reseñas
-frontend/   Next.js 16 + TypeScript + Tailwind
+frontend/   Next.js 16 + TypeScript + Tailwind (en Docker corre compilado en modo producción)
   src/app/(shop)        Páginas de la tienda
   src/app/(shop)/panel  Panel de administración
   src/lib/api.ts        Cliente de la API REST
@@ -82,8 +82,8 @@ docker-compose.yml      PostgreSQL 16, Redis, backend, worker y frontend
 
 ## Notas
 
-- Si editas código del frontend, reinicia el contenedor (`docker compose restart frontend`): en Windows y macOS el modo de desarrollo no siempre detecta cambios en carpetas compartidas.
+- El frontend corre en Docker como build de producción (`next build` + servidor *standalone*). Las variables `NEXT_PUBLIC_*` se fijan al compilar, por eso van como argumentos de build en `docker-compose.yml`; si cambias una o editas código del frontend, reconstruye con `docker compose up --build frontend`. Para desarrollar con recarga en caliente, usa `cd frontend && npm install && npm run dev` con el backend levantado en Docker.
 - Las fotos y los videos de la tienda son de nuestras propias piezas; los videos de la portada están en `frontend/public/media/`.
 - Estilo visual: Anton para titulares, Bricolage Grotesque para texto y Damion en las pegatinas; texturas de papel y riso en `frontend/public/textures/`, con modo claro y oscuro.
 - Los correos (confirmación de compra, recuperación de contraseña) se imprimen en la consola del backend en lugar de enviarse.
-- El login con Google aparece solo si configuras tu propio Client ID (`backend/.env.example`).
+- El login con Google aparece solo si configuras tu propio Client ID: en el backend (`backend/.env.example`) y, para el botón, la variable `NEXT_PUBLIC_GOOGLE_CLIENT_ID` en un `.env` junto a `docker-compose.yml` antes de construir.

@@ -14,7 +14,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://checkout.bold.co https://*.bold.co https://accounts.google.com",
   "style-src 'self' 'unsafe-inline' https://accounts.google.com",
-  "img-src 'self' data: blob: https:",
+  `img-src 'self' data: blob: https: ${apiOrigin}`,
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin} https://*.bold.co https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com`,
   "frame-src https://*.bold.co https://accounts.google.com",
