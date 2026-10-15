@@ -6,6 +6,7 @@ from .dashboard import (
     SalesByDayView,
     SalesByProductView,
 )
+from .insights import InsightsView
 from .views import (
     CheckoutQuoteView,
     CheckoutView,
@@ -26,5 +27,6 @@ urlpatterns = [
     path("admin/dashboard/summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
     path("admin/dashboard/sales-by-day/", SalesByDayView.as_view(), name="dashboard-sales-by-day"),
     path("admin/dashboard/sales-by-product/", SalesByProductView.as_view(), name="dashboard-sales-by-product"),
+    path("admin/dashboard/insights/", InsightsView.as_view(), name="dashboard-insights"),
     path("admin/orders/", AdminOrderHistoryView.as_view(), name="admin-order-history"),
 ]
