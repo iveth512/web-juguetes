@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.permissions import IsCustomer
+
 from .models import Coupon, Order
 from .serializers import (
     CheckoutSerializer,
@@ -78,7 +80,7 @@ class CheckoutQuoteView(APIView):
 
 
 class CheckoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     throttle_scope = "checkout"
 
     def post(self, request):

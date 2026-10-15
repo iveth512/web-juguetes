@@ -213,3 +213,43 @@ class TestOrderDetail:
         response = client.get(f"/api/v1/orders/{uuid.uuid4()}/")
         assert response.status_code == 404
 
+
+
+@pytest.mark.django_db
+class TestStaffCannotBuy:
+    MESSAGE = "Las cuentas de administrador no pueden realizar compras."
+
+    def test_staff_checkout_is_forbidden(self):
+        staff = _create_user(email="staff@test.com", is_staff=True)
+        product = _create_product()
+        client = APIClient()
+        client.force_authenticate(user=staff)
+
+        response = client.post("/api/v1/checkout/", _checkout_payload(product), format="json")
+
+        assert response.status_code == 403
+        assert response.data["detail"] == self.MESSAGE
+        assert not Order.objects.exists()
+        product.refresh_from_db()
+        assert product.stock == 10
+
+    def test_staff_cannot_start_a_payment(self):
+        staff = _create_user(email="staff@test.com", is_staff=True)
+        order = Order.objects.create(user=staff, total=Decimal("90000"))
+        client = APIClient()
+        client.force_authenticate(user=staff)
+
+        response = client.post(f"/api/v1/payments/init/{order.id}/")
+
+        assert response.status_code == 403
+        assert response.data["detail"] == self.MESSAGE
+
+    def test_customer_still_buys(self):
+        user = _create_user()
+        product = _create_product()
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.post("/api/v1/checkout/", _checkout_payload(product), format="json")
+
+        assert response.status_code == 201

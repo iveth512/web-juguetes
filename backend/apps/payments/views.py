@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.orders.models import Order
 from apps.orders.serializers import OrderSerializer
 from apps.orders.services import order_expires_at, release_order
+from core.permissions import IsCustomer
 
 from . import bold
 from .models import Payment
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 class BoldPaymentInitView(APIView):
     """Create a payment attempt and return the config for BoldCheckout."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     throttle_scope = "payment"
 
     def post(self, request, pk):
