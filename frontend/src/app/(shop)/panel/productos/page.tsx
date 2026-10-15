@@ -16,7 +16,7 @@ import {
   secondaryButtonClass,
   textButtonClass,
 } from '@/components/admin/productUi';
-import { adminListProducts } from '@/lib/api';
+import { adminListProducts, getAdminOptions } from '@/lib/api';
 import { cn, formatPrice } from '@/lib/utils';
 import type { AdminProduct } from '@/types/admin';
 import type { PaginatedResponse } from '@/types/product';
@@ -75,6 +75,8 @@ function AdminProductList() {
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState(searchParams.get('estado') ?? '');
   const [orden, setOrden] = useState('recientes');
+  const [franquicia, setFranquicia] = useState('');
+  const [franchises, setFranchises] = useState<{ id: string; name: string }[] | null>(null);
   const [page, setPage] = useState(1);
   const [reload, setReload] = useState(0);
   // Results remember the query they answer; the last list stays visible while the next one loads.
@@ -94,14 +96,23 @@ function AdminProductList() {
     }
   }, [searchParams, router]);
 
-  const key = JSON.stringify([search, estado, orden, page, reload]);
   useEffect(() => {
     let cancelled = false;
-    adminListProducts({ q: search, estado, orden, page })
+    getAdminOptions()
+      .then((o) => !cancelled && setFranchises(o.franchises))
+      // Without options the filter stays hidden; the list itself still works.
+      .catch(() => !cancelled && setFranchises([]));
+    return () => { cancelled = true; };
+  }, []);
+
+  const key = JSON.stringify([search, estado, orden, franquicia, page, reload]);
+  useEffect(() => {
+    let cancelled = false;
+    adminListProducts({ q: search, estado, orden, franquicia, page })
       .then((data) => !cancelled && setResult({ key, data }))
       .catch(() => !cancelled && setResult({ key, error: 'No se pudieron cargar los productos.' }));
     return () => { cancelled = true; };
-  }, [key, search, estado, orden, page]);
+  }, [key, search, estado, orden, franquicia, page]);
 
   const data = result?.data ?? null;
   const error = result?.key === key ? result.error ?? '' : '';
@@ -117,11 +128,12 @@ function AdminProductList() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const filtered = Boolean(search || estado);
+  const filtered = Boolean(search || estado || franquicia);
   const clearFilters = () => {
     setQ('');
     setSearch('');
     setEstado('');
+    setFranquicia('');
     setPage(1);
   };
 
@@ -217,6 +229,15 @@ function AdminProductList() {
               className={cn(inputClass, 'pl-9')}
             />
           </div>
+          {franchises && franchises.length > 0 && (
+            <div className="flex items-center gap-3">
+              <label htmlFor="franquicia" className="shrink-0 text-sm text-[var(--color-text-muted)]">Franquicia</label>
+              <select id="franquicia" value={franquicia} onChange={(e) => { setFranquicia(e.target.value); setPage(1); }} className={cn(inputClass, 'sm:w-52')}>
+                <option value="">Todas</option>
+                {franchises.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+            </div>
+          )}
           <div className="flex items-center gap-3 sm:ml-auto">
             <label htmlFor="orden" className="shrink-0 text-sm text-[var(--color-text-muted)]">Ordenar por</label>
             <select id="orden" value={orden} onChange={(e) => { setOrden(e.target.value); setPage(1); }} className={cn(inputClass, 'sm:w-48')}>

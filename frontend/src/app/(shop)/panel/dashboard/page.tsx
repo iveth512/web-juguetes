@@ -6,9 +6,9 @@ import { AdminShell, adminCardClass, adminInputClass } from '@/components/admin/
 import { SalesByDayChart } from '@/components/admin/charts/SalesByDayChart';
 import { TopProductsChart } from '@/components/admin/charts/TopProductsChart';
 import { formatDay } from '@/components/admin/charts/format';
-import { adminListOrders, getDashboardSummary, getSalesByDay, getSalesByProduct } from '@/lib/api';
+import { ApiError, adminListOrders, adminUpdateOrder, getDashboardSummary, getSalesByDay, getSalesByProduct } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
-import type { AdminOrderPage, DashboardSummary, DateRange, SalesByDay, SalesByProduct } from '@/types/admin';
+import type { AdminOrder, AdminOrderPage, DashboardSummary, DateRange, SalesByDay, SalesByProduct } from '@/types/admin';
 import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/types/product';
 
 const PAGE_SIZE = 24;
@@ -79,6 +79,73 @@ function EmptyChart({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
+function OrderAction({ order, onUpdated }: { order: AdminOrder; onUpdated: (o: AdminOrder) => void }) {
+  const [open, setOpen] = useState(false);
+  const [carrier, setCarrier] = useState('');
+  const [tracking, setTracking] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [done, setDone] = useState('');
+
+  const status = done ? <p className="text-xs font-semibold text-[var(--color-text)]" role="status">{done}</p> : null;
+  if (order.status !== 'paid' && order.status !== 'shipped') return status;
+
+  const submit = async (next: 'shipped' | 'delivered') => {
+    setBusy(true);
+    setErrors({});
+    try {
+      const updated = await adminUpdateOrder(order.id, next === 'shipped'
+        ? { status: next, ...(carrier.trim() && { shipping_carrier: carrier.trim() }), ...(tracking.trim() && { tracking_number: tracking.trim() }) }
+        : { status: next });
+      setOpen(false);
+      setDone(next === 'shipped' ? 'Marcado como enviado.' : 'Marcado como entregado.');
+      onUpdated(updated);
+    } catch (err) {
+      const fields = err instanceof ApiError ? err.fields : {};
+      setErrors(Object.keys(fields).length ? fields : { detail: err instanceof Error ? err.message : 'No se pudo actualizar el pedido.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const buttonClass = 'min-h-9 whitespace-nowrap rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] disabled:opacity-50';
+  const fieldError = (name: string) => errors[name] && <p className="mt-1 text-xs text-[var(--color-error)]">{errors[name]}</p>;
+  const generalError = Object.entries(errors).find(([k]) => k !== 'shipping_carrier' && k !== 'tracking_number')?.[1];
+
+  return (
+    <div className="min-w-[11rem] space-y-1.5">
+      {status}
+      {order.status === 'shipped' ? (
+        <button type="button" disabled={busy} onClick={() => submit('delivered')} className={buttonClass}>
+          {busy ? 'Guardando…' : 'Marcar entregado'}
+        </button>
+      ) : !open ? (
+        <button type="button" onClick={() => setOpen(true)} className={buttonClass}>Marcar enviado</button>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); submit('shipped'); }} className="space-y-1.5">
+          <label className="block text-xs text-[var(--color-text-muted)]">
+            Transportadora (opcional)
+            <input value={carrier} onChange={(e) => setCarrier(e.target.value)} maxLength={100} aria-invalid={Boolean(errors.shipping_carrier)} className={`${adminInputClass} mt-0.5 py-1.5 text-sm`} />
+          </label>
+          {fieldError('shipping_carrier')}
+          <label className="block text-xs text-[var(--color-text-muted)]">
+            Número de guía (opcional)
+            <input value={tracking} onChange={(e) => setTracking(e.target.value)} maxLength={100} aria-invalid={Boolean(errors.tracking_number)} className={`${adminInputClass} mt-0.5 py-1.5 text-sm`} />
+          </label>
+          {fieldError('tracking_number')}
+          <div className="flex gap-1.5">
+            <button type="submit" disabled={busy} className={`${buttonClass} !border-[var(--color-primary)] !bg-[var(--color-primary)] !text-[var(--color-on-primary)]`}>
+              {busy ? 'Guardando…' : 'Confirmar envío'}
+            </button>
+            <button type="button" disabled={busy} onClick={() => { setOpen(false); setErrors({}); }} className={buttonClass}>Cancelar</button>
+          </div>
+        </form>
+      )}
+      {generalError && <p className="text-xs text-[var(--color-error)]" role="alert">{generalError}</p>}
+    </div>
+  );
+}
+
 function SalesHistory({ range }: { range: DateRange }) {
   const [estado, setEstado] = useState('ventas');
   const [q, setQ] = useState('');
@@ -106,6 +173,9 @@ function SalesHistory({ range }: { range: DateRange }) {
   const current = result?.key === key ? result : null;
   const data = current?.data ?? null;
   const error = current?.error ?? '';
+  const replaceOrder = (updated: AdminOrder) => setResult((r) => (r?.data
+    ? { ...r, data: { ...r.data, results: r.data.results.map((o) => (o.id === updated.id ? updated : o)) } }
+    : r));
   const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_SIZE)) : 1;
 
   return (
@@ -137,14 +207,15 @@ function SalesHistory({ range }: { range: DateRange }) {
               <th className="px-3 py-2 font-semibold">Pago</th>
               <th className="px-3 py-2 font-semibold">Estado</th>
               <th className="px-3 py-2 font-semibold text-right">Total</th>
+              <th className="px-3 py-2 font-semibold">Despacho</th>
             </tr>
           </thead>
           <tbody>
             {!data && !error && [1, 2, 3].map((i) => (
-              <tr key={i}><td colSpan={7} className="px-3 py-2"><div className="h-8 animate-pulse rounded bg-[var(--color-bg-alt)]" /></td></tr>
+              <tr key={i}><td colSpan={8} className="px-3 py-2"><div className="h-8 animate-pulse rounded bg-[var(--color-bg-alt)]" /></td></tr>
             ))}
             {data?.results.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-10 text-center text-[var(--color-text-muted)]">No hay pedidos en este periodo con esos filtros.</td></tr>
+              <tr><td colSpan={8} className="px-3 py-10 text-center text-[var(--color-text-muted)]">No hay pedidos en este periodo con esos filtros.</td></tr>
             )}
             {data?.results.map((o) => (
               <tr key={o.id} className="border-b border-[var(--color-border)] last:border-0 align-top">
@@ -171,6 +242,10 @@ function SalesHistory({ range }: { range: DateRange }) {
                   </span>
                 </td>
                 <td className="px-3 py-2.5 text-right font-semibold tabular-nums whitespace-nowrap text-[var(--color-text)]">{formatPrice(o.total)}</td>
+                <td className="px-3 py-2.5">
+                  {o.tracking_number && <p className="mb-1 whitespace-nowrap text-xs text-[var(--color-text-muted)]">Guía {o.tracking_number}</p>}
+                  <OrderAction order={o} onUpdated={replaceOrder} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -285,15 +360,35 @@ function Dashboard() {
       {/* Headline + stat tiles */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_2fr]">
         <div className={`${adminCardClass} p-5`}>
-          <p className="text-sm text-[var(--color-text-muted)]">Ventas del periodo</p>
+          <p className="text-sm text-[var(--color-text-muted)]">Ventas netas</p>
           <p className="mt-1 text-5xl font-semibold tabular-nums text-[var(--color-text)]">
             {summary ? formatPrice(summary.ventas_total) : <span className="inline-block h-12 w-56 animate-pulse rounded bg-[var(--color-bg-alt)]" />}
           </p>
-          <p className="mt-2 text-xs text-[var(--color-text-muted)]">{rangeLabel} · pedidos pagados, enviados o entregados</p>
+          {summary && (
+            <dl className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
+              <div className="flex gap-1">
+                <dt>Productos</dt>
+                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(Number(summary.ventas_total) + Number(summary.descuentos))}</dd>
+              </div>
+              <div className="flex gap-1">
+                <dt>− Descuentos</dt>
+                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(summary.descuentos)}</dd>
+              </div>
+              <div className="flex gap-1">
+                <dt>· Envío cobrado</dt>
+                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(summary.envios_cobrados)}</dd>
+              </div>
+              <div className="flex gap-1">
+                <dt>· Total cobrado</dt>
+                <dd className="font-semibold tabular-nums text-[var(--color-text)]">{formatPrice(summary.total_cobrado)}</dd>
+              </div>
+            </dl>
+          )}
+          <p className="mt-2 text-xs text-[var(--color-text-muted)]">{rangeLabel} · productos de pedidos pagados, enviados o entregados, con descuentos y sin envío</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <StatTile label="Pedidos" value={summary ? String(summary.pedidos) : '—'} />
-          <StatTile label="Ticket promedio" value={summary ? formatPrice(summary.ticket_promedio) : '—'} />
+          <StatTile label="Ticket promedio" value={summary ? formatPrice(summary.ticket_promedio) : '—'} hint="Ventas netas por pedido" />
           <StatTile label="Unidades vendidas" value={summary ? String(summary.unidades_vendidas) : '—'} />
           <StatTile label="Clientes" value={summary ? String(summary.clientes) : '—'} hint="Compradores distintos" />
         </div>
@@ -309,7 +404,7 @@ function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[3fr_2fr]">
-        <Panel title="Ventas por día" subtitle={`Total vendido cada día (COP) · ${rangeLabel}`}>
+        <Panel title="Ventas por día" subtitle={`Ventas netas de cada día (COP, con descuentos y sin envío) · ${rangeLabel}`}>
           {!byDay ? (
             <div className="h-60 animate-pulse rounded bg-[var(--color-bg-alt)]" />
           ) : !byDay.dias.some((d) => Number(d.total) > 0) ? (
@@ -327,7 +422,7 @@ function Dashboard() {
                       <tr className="text-left text-xs text-[var(--color-text-muted)]">
                         <th className="py-1.5 font-semibold">Día</th>
                         <th className="py-1.5 font-semibold text-right">Pedidos</th>
-                        <th className="py-1.5 font-semibold text-right">Ventas</th>
+                        <th className="py-1.5 font-semibold text-right">Ventas netas</th>
                       </tr>
                     </thead>
                     <tbody>

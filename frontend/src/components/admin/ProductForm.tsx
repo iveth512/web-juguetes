@@ -28,7 +28,6 @@ function initialState(p?: AdminProduct) {
     short_description: p?.short_description ?? '',
     description: p?.description ?? '',
     sku: p?.sku ?? '',
-    category_id: p?.category_id ?? '',
     franchise_id: p?.franchise_id ?? '',
     brand_id: p?.brand_id ?? '',
     base_price: p ? String(Math.round(Number(p.base_price))) : '',
@@ -142,7 +141,6 @@ export function ProductForm({ product, onSaved }: Props) {
     const e: Errors = {};
     if (!form.name.trim()) e.name = 'El nombre es obligatorio.';
     if (!form.sku.trim()) e.sku = 'El SKU es obligatorio.';
-    if (!form.category_id) e.category_id = 'Selecciona una categoría.';
     if (!form.franchise_id) e.franchise_id = 'Selecciona una franquicia.';
     if (!form.brand_id) e.brand_id = 'Selecciona una marca.';
     const base = Number(form.base_price);
@@ -244,7 +242,7 @@ export function ProductForm({ product, onSaved }: Props) {
     );
   }
 
-  const select = (key: 'category_id' | 'franchise_id' | 'brand_id', label: string, items: { id: string; name: string }[]) => (
+  const select = (key: 'franchise_id' | 'brand_id', label: string, items: { id: string; name: string }[]) => (
     <div>
       <label htmlFor={key} className={labelClass}>{label}</label>
       <select
@@ -546,7 +544,6 @@ export function ProductForm({ product, onSaved }: Props) {
           </Section>
 
           <Section id="org-title" title="Organización" description="Define dónde aparece en los filtros del catálogo.">
-            {select('category_id', 'Categoría', options.categories)}
             {select('franchise_id', 'Franquicia', options.franchises)}
             {select('brand_id', 'Marca', options.brands)}
           </Section>
