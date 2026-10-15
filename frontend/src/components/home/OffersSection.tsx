@@ -36,7 +36,7 @@ export function OffersSection() {
   if (!isLoading && products.length === 0) return null;
 
   return (
-    <section className="on-dark bg-[var(--color-secondary)] py-16 md:py-24 [--color-bg-alt:#3B2A80] [--color-bg:var(--color-secondary)] dark:[--color-bg-alt:var(--color-stage-raised)]">
+    <section className="on-dark grain bg-[var(--color-secondary)] py-16 md:py-24 [--color-bg-alt:#3B2A80] [--color-bg:var(--color-secondary)] dark:[--color-bg-alt:var(--color-stage-raised)]">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
           <div className="max-w-xl">

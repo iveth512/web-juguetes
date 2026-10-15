@@ -58,10 +58,10 @@ body {
   --color-stage-text: #F4F1FF;
   --color-stage-muted: #B9B0DA;
   /* Showcase surfaces (hero, video band) follow the theme so the toggle visibly responds. */
-  --color-showcase: #EFEBFA;
-  --color-showcase-raised: #DDD5F3;
+  --color-showcase: #DED6F2;
+  --color-showcase-raised: #C9BDEA;
   --color-showcase-text: #1A1A2E;
-  --color-showcase-muted: #4D4766;
+  --color-showcase-muted: #433C5E;
 
   /* shadcn required variables */
   --background: #FFFFFF;
@@ -226,6 +226,8 @@ body {
   }
   body {
     background-color: var(--color-bg);
+    background-image: url("/textures/grain.png");
+    background-size: 180px 180px;
     color: var(--color-text);
     font-family: var(--font-body), system-ui, sans-serif;
   }
@@ -278,6 +280,11 @@ body {
   .type-section {
     font-size: clamp(2rem, 3.4vw, 3rem);
     line-height: 1;
+  }
+  /* Film grain over flat fields; it only adds a background image, so any bg colour utility still applies. */
+  .grain {
+    background-image: url("/textures/grain.png");
+    background-size: 180px 180px;
   }
   /* Re-points the surface tokens so shared components (product cards) read on dark fields. */
   .on-dark {

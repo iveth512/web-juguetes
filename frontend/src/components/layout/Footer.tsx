@@ -18,6 +18,7 @@ const HELP_LINKS = [
 const ABOUT_LINKS = [
   { href: "/nosotros", label: "Quiénes somos" },
   { href: "/privacidad", label: "Política de privacidad" },
+  { href: "/terminos", label: "Términos y condiciones" },
 ];
 
 const COLUMNS = [
@@ -28,7 +29,7 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="mt-auto bg-[var(--color-stage)] text-[var(--color-stage-text)]">
+    <footer className="grain mt-auto bg-[var(--color-stage)] text-[var(--color-stage-text)]">
       <div className="mx-auto max-w-7xl px-4 pb-10 pt-16 md:pt-24">
         <div className="grid gap-12 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="max-w-sm">

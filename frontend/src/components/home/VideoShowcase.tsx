@@ -55,7 +55,7 @@ function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
 
 export function VideoShowcase() {
   return (
-    <section className="bg-[var(--color-showcase)] py-16 text-[var(--color-showcase-text)] md:py-24">
+    <section className="grain bg-[var(--color-showcase)] py-16 text-[var(--color-showcase-text)] md:py-24">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
           <div className="max-w-xl">

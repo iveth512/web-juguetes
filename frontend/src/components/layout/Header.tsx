@@ -76,7 +76,7 @@ export function Header() {
         </p>
 
         {/* Main header */}
-        <div className="bg-[var(--color-stage)]">
+        <div className="grain bg-[var(--color-stage)]">
           <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-4">
             {/* Mobile hamburger */}
             <button
@@ -226,7 +226,7 @@ export function Header() {
         </div>
 
         {/* Navigation bar - desktop only */}
-        <nav aria-label="Principal" className="hidden lg:block bg-[var(--color-stage)]">
+        <nav aria-label="Principal" className="grain hidden lg:block bg-[var(--color-stage)]">
           <div className="mx-auto max-w-7xl px-4">
             <ul className="flex items-center gap-1">
               {NAV_LINKS.map((link) => {
