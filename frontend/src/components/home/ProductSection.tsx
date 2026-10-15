@@ -69,7 +69,7 @@ export function NewProductsSection() {
   return (
     <ProductSectionInner
       title="Recién llegados"
-      description="Las últimas cajas que entraron a la vitrina."
+      description="Lo último que llegó a la tienda."
       href="/novedades"
       linkLabel="Ver todas las novedades"
       layout="grid"

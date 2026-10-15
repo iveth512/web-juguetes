@@ -5,13 +5,13 @@ import Link from 'next/link';
 
 // The hero already shows Batman, Luffy and Mel; this band carries the rest of the studio footage.
 const clips = [
-  { src: '/media/viserion', title: 'Viserion de hielo', href: '/productos/funko-pop-viserion-de-hielo' },
-  { src: '/media/deadpool-classics', title: 'Deadpool · Pop! Classics', href: '/productos?franchise=marvel' },
-  { src: '/media/spider-man', title: 'Spider-Man', href: '/productos?franchise=marvel' },
+  { src: '/media/viserion', title: 'Viserion de hielo', href: '/productos/funko-pop-viserion-de-hielo', frame: 'var(--color-secondary)' },
+  { src: '/media/deadpool-classics', title: 'Deadpool · Pop! Classics', href: '/productos?franchise=marvel', frame: 'var(--color-primary)' },
+  { src: '/media/spider-man', title: 'Spider-Man', href: '/productos?franchise=marvel', frame: 'var(--color-accent)' },
 ];
 
 /** Plays only the clips on screen, and none when the user prefers reduced motion. */
-function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
+function ShowcaseClip({ src, title, href, frame }: (typeof clips)[number]) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -33,7 +33,8 @@ function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
       href={href}
       className="group block w-[62%] shrink-0 snap-start sm:w-[40%] md:w-auto"
     >
-      <div className="overflow-hidden bg-[var(--color-showcase-raised)]">
+      <div className="photo-frame" style={{ '--frame-ink': frame } as React.CSSProperties}>
+      <div className="riso-photo overflow-hidden rounded-[6px] bg-[var(--color-showcase-raised)]">
       <video
         ref={ref}
         src={`${src}.mp4`}
@@ -45,6 +46,7 @@ function ShowcaseClip({ src, title, href }: (typeof clips)[number]) {
         aria-hidden="true"
         className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
       />
+      </div>
       </div>
       <span className="mt-3 block text-base font-medium text-[var(--color-showcase-muted)] transition-colors group-hover:text-[var(--color-showcase-text)]">
         {title}
@@ -59,9 +61,9 @@ export function VideoShowcase() {
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 md:mb-10">
           <div className="max-w-xl">
-            <h2 className="type-section">Así llegan a tu casa</h2>
+            <h2 className="type-section misreg">Así llegan a tu casa</h2>
             <p className="mt-3 text-base text-[var(--color-showcase-muted)]">
-              Cada pieza grabada en nuestro estudio, tal como llega a tu casa.
+              Videos reales de cajas que tenemos en stock.
             </p>
           </div>
           <Link

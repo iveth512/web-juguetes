@@ -2,15 +2,16 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { Sticker } from '@/components/ui/Sticker';
 
 const showcase = [
-  { src: '/media/batman', title: 'Batman', href: '/productos/funko-pop-batman-518' },
-  { src: '/media/luffy-gear-5', title: 'Luffy Quinta Marcha', href: '/productos/funko-pop-luffy-quinta-marcha-1607' },
-  { src: '/media/mel-arcane', title: 'Mel · Arcane', href: '/productos/funko-pop-mel-1489' },
+  { src: '/media/batman', title: 'Batman', href: '/productos/funko-pop-batman-518', frame: 'var(--color-accent)' },
+  { src: '/media/luffy-gear-5', title: 'Luffy Quinta Marcha', href: '/productos/funko-pop-luffy-quinta-marcha-1607', frame: 'var(--color-primary)' },
+  { src: '/media/mel-arcane', title: 'Mel · Arcane', href: '/productos/funko-pop-mel-1489', frame: 'var(--color-secondary)' },
 ];
 
 /** Studio clip that only plays while visible and never when the user prefers reduced motion. */
-function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & { priority?: boolean }) {
+function StudioClip({ src, title, href, priority, frame }: (typeof showcase)[number] & { priority?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -29,7 +30,8 @@ function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & 
 
   return (
     <Link href={href} className="group block focus-visible:outline-offset-4">
-      <div className="overflow-hidden bg-[var(--color-showcase-raised)]">
+      <div className="photo-frame" style={{ '--frame-ink': frame } as React.CSSProperties}>
+      <div className="riso-photo overflow-hidden rounded-[6px] bg-[var(--color-showcase-raised)]">
         <video
           ref={ref}
           src={`${src}.mp4`}
@@ -42,6 +44,7 @@ function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & 
           className="aspect-[9/16] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
       </div>
+      </div>
       <span className="mt-3 block text-sm font-medium text-[var(--color-showcase-muted)] transition-colors group-hover:text-[var(--color-showcase-text)]">
         {title}
       </span>
@@ -51,13 +54,13 @@ function StudioClip({ src, title, href, priority }: (typeof showcase)[number] & 
 
 export function HeroBanner() {
   return (
-    <section className="grain bg-[var(--color-showcase)] text-[var(--color-showcase-text)] transition-colors duration-300">
+    <section className="grain relative bg-[var(--color-showcase)] text-[var(--color-showcase-text)] transition-colors duration-300">
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-10 md:pb-20 md:pt-16 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-12">
         <div>
-          <h1 className="type-hero">Míralo antes de tenerlo</h1>
+          <h1 className="type-hero misreg">Tu colección empieza aquí</h1>
           <p className="type-lead mt-6 max-w-[34ch] text-[var(--color-showcase-muted)]">
-            Funko Pop! originales con envío a toda Colombia. Grabamos nuestras piezas en
-            estudio, tal como llegan a tu casa.
+            Funko Pop! originales de anime, Marvel, música y mucho más, con envío a toda
+            Colombia.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link
@@ -84,7 +87,14 @@ export function HeroBanner() {
                 'w-[42%] shrink-0 snap-start sm:w-[30%] lg:w-auto ' + (i === 1 ? 'lg:-mt-12' : 'lg:mt-12')
               }
             >
-              <StudioClip {...clip} priority={i === 1} />
+              <div className="relative">
+                {i === 1 && (
+                  <Sticker tone="green" round tilt={-10} className="absolute -right-3 -top-4 z-10 h-20 w-20 text-[22px]">
+                    ¡100 % original!
+                  </Sticker>
+                )}
+                <StudioClip {...clip} priority={i === 1} />
+              </div>
             </div>
           ))}
         </div>

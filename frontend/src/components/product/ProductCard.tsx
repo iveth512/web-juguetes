@@ -11,27 +11,28 @@ import { useAuthStore } from '@/stores/authStore';
 import { useWishlist, useToggleWishlist } from '@/hooks/useWishlist';
 import { useIsStaff } from '@/hooks/useIsStaff';
 import { StarRating } from './StarRating';
+import { Sticker, type StickerTone } from '@/components/ui/Sticker';
 import type { ProductListItem } from '@/types/product';
 
 interface ProductCardProps {
   product: ProductListItem;
 }
 
-// One badge per card, so a single signal reads at a glance.
-function getBadge(product: ProductListItem) {
-  if (product.stock === 0) {
-    return { label: 'Agotado', className: 'bg-[var(--color-text)] text-[var(--color-bg)]' };
-  }
-  if (product.is_on_sale && product.sale_percentage) {
-    return {
-      label: `-${product.sale_percentage}%`,
-      className: 'bg-[var(--color-primary)] text-[var(--color-on-primary)]',
-    };
-  }
-  if (product.is_new) {
-    return { label: 'Nuevo', className: 'bg-[var(--color-accent)] text-[var(--color-on-accent)]' };
-  }
+// One sticker per card, so a single signal reads at a glance.
+function getBadge(product: ProductListItem): { label: string; tone: StickerTone } | null {
+  if (product.stock === 0) return { label: 'Agotado', tone: 'ink' };
+  if (product.is_on_sale && product.sale_percentage) return { label: `−${product.sale_percentage} %`, tone: 'orange' };
+  if (product.is_new) return { label: '¡Nuevo!', tone: 'green' };
   return null;
+}
+
+const FRAME_INKS = ['var(--color-primary)', 'var(--color-secondary)', 'var(--color-accent)'];
+
+// Stable per product, so a card keeps its frame colour across renders and pages.
+function frameInk(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return FRAME_INKS[h % FRAME_INKS.length];
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -70,7 +71,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <article className={cn('group relative', isOutOfStock && 'opacity-70')}>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-[var(--color-bg-alt)]">
+      <div className="photo-frame" style={{ '--frame-ink': frameInk(product.id) } as React.CSSProperties}>
+      <div className="riso-photo relative aspect-[4/5] overflow-hidden rounded-[6px] bg-[var(--color-bg-alt)]">
         {product.primary_image_url ? (
           <Image
             src={product.primary_image_url}
@@ -86,22 +88,19 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
+      </div>
+
         {badge && (
-          <span
-            className={cn(
-              'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[13px] font-semibold leading-none',
-              badge.className
-            )}
-          >
+          <Sticker tone={badge.tone} tilt={-8} className="absolute -left-2 -top-3 z-10 text-[19px]">
             {badge.label}
-          </span>
+          </Sticker>
         )}
 
         {!isOutOfStock && !isStaff && (
           <button
             type="button"
             onClick={handleAddToCart}
-            className="absolute bottom-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] transition-[background-color,transform] hover:bg-[var(--color-primary-hover)] active:scale-95"
+            className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] transition-[background-color,transform] hover:bg-[var(--color-primary-hover)] active:scale-95"
             aria-label={`Agregar ${product.name} al carrito`}
           >
             <Plus className="h-5 w-5" strokeWidth={2} />
@@ -150,7 +149,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <button
         type="button"
         onClick={handleWishlistToggle}
-        className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-bg)]/85 text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg)]"
+        className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-bg)]/85 text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg)]"
         aria-label={inWishlist ? `Quitar ${product.name} de favoritos` : `Agregar ${product.name} a favoritos`}
         aria-pressed={inWishlist}
       >
