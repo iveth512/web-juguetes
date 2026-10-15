@@ -23,6 +23,7 @@ from apps.shipping.models import ShippingZone
 from seed.catalog import PRODUCTS, product_fields
 
 IMAGES_DIR = Path(__file__).resolve().parents[2] / "images"
+CATALOG_AGE_DAYS = 120
 
 
 class Command(BaseCommand):
@@ -179,6 +180,8 @@ class Command(BaseCommand):
                 import_lot=lots[lot_names[i % len(lot_names)]],
             )
             product, created = Product.objects.get_or_create(sku=sku, defaults=fields)
+            if created:  # listed before the 90 days of demo sales
+                Product.objects.filter(pk=product.pk).update(created_at=timezone.now() - timedelta(days=CATALOG_AGE_DAYS))
             created_count += created
             self._attach_photos(product)
         # Each save changes its lot's per-unit import cost; refresh every product's landed cost.
