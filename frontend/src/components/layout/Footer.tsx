@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Logo } from "@/components/brand/Logo";
-import { getNewProducts, getOnSaleProducts, getProducts } from "@/lib/api";
+import { getFranchises, getNewProducts, getOnSaleProducts, getProducts } from "@/lib/api";
 
 interface FooterLink {
   href: string;
@@ -17,31 +17,40 @@ function useStoreCounts() {
   const all = useQuery({ queryKey: ["footer", "all"], queryFn: () => getProducts() });
   const fresh = useQuery({ queryKey: ["footer", "new"], queryFn: getNewProducts });
   const sale = useQuery({ queryKey: ["footer", "sale"], queryFn: getOnSaleProducts });
+  const franchises = useQuery({ queryKey: ["footer", "franchises"], queryFn: getFranchises });
   return {
     all: all.data?.count,
     fresh: fresh.data?.count,
     sale: sale.data?.count,
+    franchises: franchises.data?.length,
   };
 }
 
-function LeaderLink({ href, label, count }: FooterLink) {
+function CountLink({ href, label, count }: FooterLink) {
   return (
     <li>
-      <Link
-        href={href}
-        className="group flex min-h-11 items-baseline gap-3 py-1 text-[17px] text-[var(--color-stage-text)]"
-      >
+      <Link href={href} className="group flex min-h-12 items-baseline gap-3">
+        <span className="w-[2.6ch] text-right font-[family-name:var(--font-display)] text-[28px] leading-none tabular-nums text-[var(--color-primary)] transition-transform duration-200 group-hover:-translate-y-0.5">
+          {count ?? ""}
+        </span>
+        <span className="text-[17px] text-[var(--color-stage-text)] transition-colors group-hover:text-[var(--color-primary)]">
+          {label}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+function LeaderLink({ href, label }: FooterLink) {
+  return (
+    <li>
+      <Link href={href} className="group flex min-h-11 items-baseline gap-3 text-[17px] text-[var(--color-stage-text)]">
         <span className="transition-colors group-hover:text-[var(--color-primary)]">{label}</span>
         {/* Dotted leader, like the contents page of a magazine. */}
         <i
           aria-hidden="true"
           className="h-px flex-1 translate-y-[-0.3em] border-b-2 border-dotted border-[var(--color-stage-muted)]/40 transition-colors group-hover:border-[var(--color-primary)]"
         />
-        {count !== undefined && (
-          <span className="tabular-nums text-[var(--color-stage-muted)] transition-colors group-hover:text-[var(--color-primary)]">
-            {count}
-          </span>
-        )}
       </Link>
     </li>
   );
@@ -52,34 +61,19 @@ export function Footer() {
   const counts = useStoreCounts();
   if (pathname.startsWith("/panel")) return null;
 
-  const columns: { title: string; links: FooterLink[] }[] = [
-    {
-      title: "Tienda",
-      links: [
-        { href: "/novedades", label: "Novedades", count: counts.fresh },
-        { href: "/ofertas", label: "Ofertas de la semana", count: counts.sale },
-        { href: "/franquicias", label: "Franquicias" },
-        { href: "/productos", label: "Todos los productos", count: counts.all },
-      ],
-    },
-    {
-      title: "Ayuda",
-      links: [
-        { href: "/envios", label: "Envíos y entregas" },
-        { href: "/devoluciones", label: "Devoluciones" },
-        { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
-        { href: "/contacto", label: "Contacto" },
-      ],
-    },
-    {
-      title: "La tienda",
-      links: [
-        { href: "/nosotros", label: "Quiénes somos" },
-        { href: "/privacidad", label: "Política de privacidad" },
-        { href: "/terminos", label: "Términos y condiciones" },
-      ],
-    },
+  const shop: FooterLink[] = [
+    { href: "/novedades", label: "Novedades", count: counts.fresh },
+    { href: "/ofertas", label: "Ofertas de la semana", count: counts.sale },
+    { href: "/productos", label: "Todo el catálogo", count: counts.all },
+    { href: "/franquicias", label: "Franquicias", count: counts.franchises },
   ];
+  const help: FooterLink[] = [
+    { href: "/envios", label: "Envíos y entregas" },
+    { href: "/devoluciones", label: "Devoluciones" },
+    { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
+  ];
+  const headingClass =
+    "font-[family-name:var(--font-display)] text-2xl uppercase leading-none text-[var(--color-stage-text)]";
 
   return (
     <footer className="mt-auto">
@@ -95,25 +89,35 @@ export function Footer() {
               </p>
             </div>
 
-            <div className="grid gap-x-12 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
-              {columns.map((column) => (
-                <nav key={column.title} aria-label={column.title}>
-                  <h3 className="font-[family-name:var(--font-display)] text-2xl uppercase leading-none text-[var(--color-stage-text)]">
-                    {column.title}
-                  </h3>
-                  <ul className="mt-4">
-                    {column.links.map((link) => (
-                      <LeaderLink key={link.href} {...link} />
-                    ))}
-                  </ul>
-                </nav>
-              ))}
+            <div className="grid gap-x-16 gap-y-10 sm:grid-cols-2">
+              <nav aria-label="Tienda">
+                <h3 className={headingClass}>Tienda</h3>
+                <ul className="mt-3">
+                  {shop.map((link) => (
+                    <CountLink key={link.href} {...link} />
+                  ))}
+                </ul>
+              </nav>
+              <nav aria-label="Ayuda">
+                <h3 className={headingClass}>Ayuda</h3>
+                <ul className="mt-3">
+                  {help.map((link) => (
+                    <LeaderLink key={link.href} {...link} />
+                  ))}
+                </ul>
+              </nav>
             </div>
           </div>
 
-          <p className="mt-10 text-sm text-[var(--color-stage-muted)]">
-            &copy; {new Date().getFullYear()} Juguetes para Frikis · Funko Pop! originales en Colombia
-          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[var(--color-stage-muted)]">
+            <p>&copy; {new Date().getFullYear()} Juguetes para Frikis</p>
+            <Link href="/privacidad" className="underline-offset-4 hover:text-[var(--color-stage-text)] hover:underline">
+              Privacidad
+            </Link>
+            <Link href="/terminos" className="underline-offset-4 hover:text-[var(--color-stage-text)] hover:underline">
+              Términos
+            </Link>
+          </div>
         </div>
 
       </div>
