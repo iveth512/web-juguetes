@@ -1,3 +1,4 @@
+from decimal import Decimal
 from io import StringIO
 
 import pytest
@@ -135,10 +136,24 @@ class TestBootstrapDemo:
         assert CustomUser.objects.get(email="cliente@demo.local").check_password("Cliente-Demo-2026!")
         sales = Order.objects.filter(status__in=["paid", "shipped", "delivered"]).count()
         assert sales > 10
-        assert all(o.total == o.subtotal + o.shipping_cost for o in Order.objects.all())
+        assert all(o.total == o.subtotal - o.discount + o.shipping_cost for o in Order.objects.all())
 
         call_command("bootstrap_demo", stdout=StringIO())
         assert Order.objects.filter(status__in=["paid", "shipped", "delivered"]).count() == sales
+
+    def test_reset_sales_removes_qa_data_and_regenerates(self, settings, tmp_path):
+        settings.DEBUG = True
+        settings.MEDIA_ROOT = tmp_path
+        call_command("bootstrap_demo", stdout=StringIO())
+        sales = Order.objects.count()
+        qa = CustomUser.objects.create_user(email="qa.tester.1@example.com", password="x", first_name="Q", last_name="A")
+        Order.objects.create(user=qa, total=Decimal("50000"), status=Order.Status.PAID)
+
+        call_command("bootstrap_demo", "--reset-sales", stdout=StringIO())
+
+        assert not CustomUser.objects.filter(email__startswith="qa.").exists()
+        assert Order.objects.count() == sales  # same seed, same demo again
+        assert CustomUser.objects.filter(email="admin@demo.local", is_staff=True).exists()
 
     def test_refuses_outside_debug(self, settings):
         settings.DEBUG = False

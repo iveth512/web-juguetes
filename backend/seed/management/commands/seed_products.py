@@ -181,6 +181,9 @@ class Command(BaseCommand):
             product, created = Product.objects.get_or_create(sku=sku, defaults=fields)
             created_count += created
             self._attach_photos(product)
+        # Each save changes its lot's per-unit import cost; refresh every product's landed cost.
+        for product in Product.objects.filter(import_lot__isnull=False).select_related("import_lot"):
+            product.save()
         return created_count
 
     def _attach_photos(self, product):
