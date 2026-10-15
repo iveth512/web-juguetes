@@ -1,99 +1,136 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Heart, Minus, Plus, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
 import { cn, formatPrice, getStockStatus } from '@/lib/utils';
 import { getShippingZones } from '@/lib/api';
 import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useToggleWishlist, useWishlist } from '@/hooks/useWishlist';
+import { FREE_SHIPPING_THRESHOLD } from '@/components/cart/CartSummary';
 import { VariantSelector } from './VariantSelector';
+import { StarRating } from './StarRating';
 import type { ProductDetail, ProductVariant, ShippingZone } from '@/types/product';
 
 interface ProductInfoProps {
   product: ProductDetail;
 }
 
-function StarIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      className={cn('w-4 h-4', filled ? 'text-[var(--color-primary)]' : 'text-gray-300')}
-      fill="currentColor"
-      viewBox="0 0 20 20"
-    >
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-}
+type TabKey = 'description' | 'specs' | 'shipping';
 
-function TrustBadge({ icon, text }: { icon: string; text: string }) {
-  return (
-    <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-      <span className="text-base">{icon}</span>
-      <span>{text}</span>
-    </div>
-  );
-}
+const TRUST_POINTS = [
+  { icon: ShieldCheck, text: 'Producto 100% original' },
+  { icon: Truck, text: 'Envío a toda Colombia' },
+  { icon: RotateCcw, text: 'Devoluciones dentro de 30 días', href: '/devoluciones' },
+];
 
 function ShippingTable() {
-  const { data: zones, isLoading } = useQuery<ShippingZone[]>({
+  const { data: zones, isLoading, isError } = useQuery<ShippingZone[]>({
     queryKey: ['shipping-zones'],
     queryFn: getShippingZones,
   });
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2" aria-busy="true">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-6 bg-[var(--color-bg-alt)] rounded animate-pulse" />
+          <div key={i} className="h-6 animate-pulse rounded bg-[var(--color-bg-alt)]" />
         ))}
       </div>
     );
   }
 
+  if (isError || !zones?.length) {
+    return (
+      <p className="text-base text-[var(--color-text-muted)]">
+        No pudimos cargar las tarifas de envío. Las verás al ingresar tu ciudad en el checkout.
+      </p>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-base">
         <thead>
-          <tr className="border-b border-[var(--color-border)]">
-            <th className="text-left py-2 font-semibold">Zona</th>
-            <th className="text-left py-2 font-semibold">Costo</th>
-            <th className="text-left py-2 font-semibold">Tiempo</th>
+          <tr className="border-b border-[var(--color-border)] text-left text-sm text-[var(--color-text-muted)]">
+            <th scope="col" className="py-2 pr-3 font-medium">Destino</th>
+            <th scope="col" className="py-2 pr-3 font-medium">Costo</th>
+            <th scope="col" className="py-2 font-medium">Tiempo</th>
           </tr>
         </thead>
         <tbody>
-          {zones?.map((zone) => (
-            <tr key={zone.id} className="border-b border-[var(--color-border)]/50">
-              <td className="py-2">{zone.name}</td>
-              <td className="py-2">{formatPrice(zone.price)}</td>
+          {zones.map((zone) => (
+            <tr key={zone.id} className="border-b border-[var(--color-border)]">
+              <td className="py-2 pr-3">{zone.name}</td>
+              <td className="py-2 pr-3 tabular-nums">{formatPrice(zone.price)}</td>
               <td className="py-2">
-                {zone.min_days}-{zone.max_days} dias habiles
+                {zone.min_days}–{zone.max_days} días hábiles
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="mt-3 text-sm text-green-600 font-medium">
-        Envio GRATIS en compras superiores a $250.000 COP
+      <p className="mt-3 text-base font-medium text-[var(--color-text)]">
+        Envío gratis en compras desde {formatPrice(FREE_SHIPPING_THRESHOLD)}.
       </p>
     </div>
   );
 }
 
 export function ProductInfo({ product }: ProductInfoProps) {
+  const router = useRouter();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'shipping'>('description');
+  const [activeTab, setActiveTab] = useState<TabKey>('description');
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
 
-  // Determine current price/stock based on selected variant
   const currentPrice = selectedVariant ? selectedVariant.price : product.base_price;
   const currentComparePrice = selectedVariant ? selectedVariant.compare_price : product.compare_price;
   const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
   const stockStatus = getStockStatus(currentStock, product.low_stock_threshold);
-
-  const salePercentage = product.is_on_sale && product.sale_percentage ? product.sale_percentage : null;
+  const hasDiscount =
+    currentComparePrice !== null && parseFloat(currentComparePrice) > parseFloat(currentPrice);
+  const salePercentage = hasDiscount && product.is_on_sale ? product.sale_percentage : null;
+  const needsVariant = product.has_variants && product.variants.some((v) => v.is_active) && !selectedVariant;
+  const canBuy = currentStock > 0;
+  const safeQuantity = Math.min(quantity, Math.max(1, currentStock));
 
   const addItem = useCartStore((s) => s.addItem);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isInWishlist } = useWishlist();
+  const { add, remove, isPending: wishlistPending } = useToggleWishlist();
+  const inWishlist = isInWishlist(product.id);
+
+  // The mobile bar appears once the main buy buttons scroll out of view and
+  // hides over the footer so it never covers the site's last links.
+  useEffect(() => {
+    const actions = actionsRef.current;
+    const footer = document.querySelector('footer');
+    if (!actions || typeof IntersectionObserver === 'undefined') return;
+    let actionsVisible = true;
+    let footerVisible = false;
+    const update = () => setShowStickyBar(!actionsVisible && !footerVisible);
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === actions) actionsVisible = entry.isIntersecting;
+        else footerVisible = entry.isIntersecting;
+      }
+      update();
+    });
+    observer.observe(actions);
+    if (footer) observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
 
   const handleAddToCart = () => {
+    if (needsVariant) {
+      document.getElementById('variant-selector')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     addItem({
       productId: product.id,
       variantId: selectedVariant?.id,
@@ -101,189 +138,212 @@ export function ProductInfo({ product }: ProductInfoProps) {
       variantName: selectedVariant?.name,
       price: parseFloat(currentPrice),
       image: product.images?.[0]?.image || '',
-      quantity,
+      quantity: safeQuantity,
       maxStock: currentStock,
       slug: product.slug,
     });
   };
 
-  const handleAddToFavorites = () => {
-    console.log('Add to favorites:', product.slug);
+  const handleToggleFavorite = () => {
+    if (!isAuthenticated) {
+      router.push(`/login?next=${encodeURIComponent(`/productos/${product.slug}`)}`);
+      return;
+    }
+    if (inWishlist) remove(product.id);
+    else add(product.id);
   };
 
-  const tabs = [
-    { key: 'description' as const, label: 'Descripcion' },
-    { key: 'specs' as const, label: 'Especificaciones' },
-    { key: 'shipping' as const, label: 'Envio' },
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'description', label: 'Descripción' },
+    { key: 'specs', label: 'Especificaciones' },
+    { key: 'shipping', label: 'Envío' },
   ];
 
   const specsRows = [
     { label: 'Marca', value: product.brand.name },
     { label: 'Franquicia', value: product.franchise.name },
-    { label: 'Tamano', value: product.dimensions || '-' },
-    { label: 'Peso', value: product.weight_grams ? `${product.weight_grams}g` : '-' },
+    { label: 'Tamaño', value: product.dimensions || '—' },
+    { label: 'Peso', value: product.weight_grams ? `${product.weight_grams} g` : '—' },
     { label: 'SKU', value: selectedVariant?.sku || product.sku },
   ];
 
+  const addLabel = !canBuy ? 'Agotado' : needsVariant ? 'Elige un tamaño' : 'Agregar al carrito';
+
   return (
-    <div className="space-y-5">
-      {/* Franchise */}
-      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
-        {product.franchise.name}
-      </p>
+    <div className="min-w-0 space-y-6">
+      <div className="space-y-3">
+        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-[var(--color-text)] [overflow-wrap:anywhere] [text-wrap:balance]">
+          {product.name}
+        </h1>
 
-      {/* Title */}
-      <h1 className="font-heading text-[26px] font-bold text-[var(--color-text)] leading-tight">
-        {product.name}
-      </h1>
-
-      {/* Rating + SKU */}
-      <div className="flex items-center gap-2 flex-wrap text-sm">
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <StarIcon key={star} filled={star <= 4} />
-          ))}
-          <span className="ml-1 text-[var(--color-text-muted)]">4.8 (24 reviews)</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--color-text-muted)]">
+          {product.review_count > 0 && product.average_rating !== null && (
+            <a href="#resenas" className="flex items-center gap-2 hover:text-[var(--color-text)]">
+              <StarRating rating={product.average_rating} size="sm" />
+              <span>
+                {product.average_rating.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}{' '}
+                ({product.review_count} {product.review_count === 1 ? 'reseña' : 'reseñas'})
+              </span>
+            </a>
+          )}
+          <Link
+            href={`/productos?franchise=${product.franchise.slug}`}
+            className="font-medium text-[var(--color-primary-text)] hover:underline"
+          >
+            Más de {product.franchise.name}
+          </Link>
+          <span>SKU {selectedVariant?.sku || product.sku}</span>
         </div>
-        <span className="text-[var(--color-text-muted)]">|</span>
-        <span className="text-[var(--color-text-muted)]">
-          SKU: {selectedVariant?.sku || product.sku}
-        </span>
       </div>
 
-      {/* Price block */}
-      <div className="bg-[var(--color-bg-alt)] rounded-lg p-4">
-        <div className="flex items-baseline gap-3">
-          <span className="font-heading text-[32px] font-extrabold text-[var(--color-primary)]">
+      <div>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-[2rem] font-bold leading-none tabular-nums text-[var(--color-text)]">
             {formatPrice(currentPrice)}
           </span>
-          {currentComparePrice && (
-            <>
-              <span className="text-lg text-[var(--color-text-muted)] line-through">
-                {formatPrice(currentComparePrice)}
-              </span>
-              {salePercentage && (
-                <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-semibold rounded">
-                  -{salePercentage}%
-                </span>
-              )}
-            </>
+          {hasDiscount && currentComparePrice && (
+            <span className="text-lg tabular-nums text-[var(--color-text-muted)] line-through">
+              <span className="sr-only">Antes </span>
+              {formatPrice(currentComparePrice)}
+            </span>
           )}
+          {salePercentage ? (
+            <span className="rounded-full bg-[var(--color-accent)] px-2.5 py-0.5 text-sm font-semibold text-[var(--color-on-accent)]">
+              −{salePercentage}%
+            </span>
+          ) : null}
         </div>
-        <p className="text-xs text-[var(--color-text-muted)] mt-1">
-          Precio incluye importacion. IVA incluido.
-        </p>
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">IVA e importación incluidos.</p>
       </div>
 
-      {/* Variant selector */}
       {product.has_variants && product.variants.length > 0 && (
-        <VariantSelector
-          variants={product.variants}
-          selectedVariantId={selectedVariant?.id || null}
-          onSelect={setSelectedVariant}
-        />
+        <div id="variant-selector">
+          <VariantSelector
+            variants={product.variants}
+            selectedVariantId={selectedVariant?.id || null}
+            onSelect={(variant) => {
+              setSelectedVariant(variant);
+              setQuantity(1);
+            }}
+          />
+        </div>
       )}
 
-      {/* Stock indicator */}
-      <div className="flex items-center gap-2">
+      <p className="flex items-center gap-2 text-base font-medium text-[var(--color-text)]">
         <span
+          aria-hidden="true"
           className={cn(
-            'w-2.5 h-2.5 rounded-full',
-            stockStatus.color === 'success' && 'bg-green-500',
-            stockStatus.color === 'warning' && 'bg-orange-500',
-            stockStatus.color === 'error' && 'bg-red-500'
+            'h-2.5 w-2.5 shrink-0 rounded-full',
+            stockStatus.color === 'success' && 'bg-[var(--color-accent)]',
+            stockStatus.color === 'warning' && 'bg-[var(--color-primary)]',
+            stockStatus.color === 'error' && 'bg-[var(--color-error)]'
           )}
         />
-        <span
-          className={cn(
-            'text-sm font-medium',
-            stockStatus.color === 'success' && 'text-green-600',
-            stockStatus.color === 'warning' && 'text-orange-500',
-            stockStatus.color === 'error' && 'text-red-500'
-          )}
-        >
+        <span className={cn(stockStatus.color === 'error' && 'text-[var(--color-error)]')}>
           {stockStatus.label}
         </span>
-      </div>
+      </p>
 
-      {/* Quantity selector */}
-      {currentStock > 0 && (
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-semibold text-[var(--color-text)]">Cantidad:</label>
-          <div className="flex items-center border border-[var(--color-border)] rounded-lg overflow-hidden">
-            <button
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-[var(--color-bg-alt)] transition-colors"
-              disabled={quantity <= 1}
-            >
-              -
-            </button>
-            <input
-              type="number"
-              value={quantity}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || 1;
-                setQuantity(Math.max(1, Math.min(val, currentStock)));
-              }}
-              className="w-14 h-10 text-center text-sm font-medium border-x border-[var(--color-border)] bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              min={1}
-              max={currentStock}
-            />
-            <button
-              onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
-              className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-[var(--color-bg-alt)] transition-colors"
-              disabled={quantity >= currentStock}
-            >
-              +
-            </button>
+      <div ref={actionsRef} className="space-y-3">
+        {canBuy && (
+          <div className="flex items-center gap-3">
+            <label htmlFor="product-quantity" className="text-base font-medium text-[var(--color-text)]">
+              Cantidad
+            </label>
+            <div className="flex items-center overflow-hidden rounded-full border border-[var(--color-border)]">
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="flex h-11 w-11 items-center justify-center transition-colors hover:bg-[var(--color-bg-alt)] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={safeQuantity <= 1}
+                aria-label="Quitar una unidad"
+              >
+                <Minus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              </button>
+              <input
+                id="product-quantity"
+                type="number"
+                inputMode="numeric"
+                value={safeQuantity}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 1;
+                  setQuantity(Math.max(1, Math.min(val, currentStock)));
+                }}
+                className="h-11 w-12 bg-transparent text-center text-base font-semibold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                min={1}
+                max={currentStock}
+              />
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => Math.min(currentStock, q + 1))}
+                className="flex h-11 w-11 items-center justify-center transition-colors hover:bg-[var(--color-bg-alt)] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={safeQuantity >= currentStock}
+                aria-label="Agregar una unidad"
+              >
+                <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              </button>
+            </div>
           </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!canBuy}
+            className="min-h-12 flex-1 rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:bg-[var(--color-bg-alt)] disabled:text-[var(--color-text-muted)]"
+          >
+            {addLabel}
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleFavorite}
+            disabled={wishlistPending}
+            aria-pressed={inWishlist}
+            aria-label={inWishlist ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+            title={inWishlist ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+            className="flex min-h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-alt)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-border)] disabled:opacity-60"
+          >
+            <Heart
+              className={cn('h-5 w-5', inWishlist && 'fill-[var(--color-primary)] text-[var(--color-primary)]')}
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+          </button>
         </div>
-      )}
-
-      {/* Action buttons */}
-      <div className="space-y-2">
-        <button
-          onClick={handleAddToCart}
-          disabled={currentStock === 0}
-          className={cn(
-            'w-full py-3.5 rounded-lg text-base font-bold transition-colors',
-            currentStock > 0
-              ? 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          )}
-        >
-          {currentStock > 0 ? 'Agregar al Carrito' : 'Agotado'}
-        </button>
-        <button
-          onClick={handleAddToFavorites}
-          className="w-full py-3 rounded-lg text-base font-medium border-2 border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-primary)] transition-colors"
-        >
-          Agregar a Favoritos
-        </button>
       </div>
 
-      {/* Trust row */}
-      <div className="flex items-center justify-between gap-4 py-3">
-        <TrustBadge icon="✓" text="100% Original" />
-        <TrustBadge icon="📦" text="Envio seguro" />
-        <TrustBadge icon="↩" text="30 dias devolucion" />
-      </div>
+      <ul className="grid gap-2 text-sm text-[var(--color-text)] sm:grid-cols-3 sm:gap-4 md:grid-cols-1 md:gap-2 xl:grid-cols-3 xl:gap-4">
+        {TRUST_POINTS.map(({ icon: Icon, text, href }) => (
+          <li key={text} className="flex items-center gap-2">
+            <Icon className="h-5 w-5 shrink-0 text-[var(--color-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+            {href ? (
+              <Link href={href} className="hover:underline">
+                {text}
+              </Link>
+            ) : (
+              <span>{text}</span>
+            )}
+          </li>
+        ))}
+      </ul>
 
-      {/* Divider */}
-      <hr className="border-[var(--color-border)]" />
-
-      {/* Tabs */}
       <div>
-        <div className="flex border-b border-[var(--color-border)]">
+        <div role="tablist" aria-label="Información del producto" className="flex flex-wrap gap-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
+              type="button"
+              role="tab"
+              id={`tab-${tab.key}`}
+              aria-selected={activeTab === tab.key}
+              aria-controls={`panel-${tab.key}`}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+                'min-h-11 rounded-full px-3 text-base font-medium transition-colors xl:px-4',
                 activeTab === tab.key
-                  ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                  : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                  ? 'bg-[var(--color-bg-alt)] text-[var(--color-text)]'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
               )}
             >
               {tab.label}
@@ -291,22 +351,22 @@ export function ProductInfo({ product }: ProductInfoProps) {
           ))}
         </div>
 
-        <div className="py-4">
+        <div role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} className="py-5">
           {activeTab === 'description' && (
-            <div className="text-sm text-[var(--color-text)] leading-relaxed whitespace-pre-line">
-              {product.description || product.short_description || 'Sin descripcion disponible.'}
+            <div className="max-w-[65ch] whitespace-pre-line text-base leading-relaxed text-[var(--color-text)]">
+              {product.description || product.short_description || 'Este producto aún no tiene descripción.'}
             </div>
           )}
 
           {activeTab === 'specs' && (
-            <table className="w-full text-sm">
+            <table className="w-full text-base">
               <tbody>
                 {specsRows.map((row) => (
-                  <tr key={row.label} className="border-b border-[var(--color-border)]/50">
-                    <td className="py-2 font-semibold text-[var(--color-text-muted)] w-1/3">
+                  <tr key={row.label} className="border-b border-[var(--color-border)]">
+                    <th scope="row" className="w-1/3 py-2 pr-3 text-left font-medium text-[var(--color-text-muted)]">
                       {row.label}
-                    </td>
-                    <td className="py-2 text-[var(--color-text)]">{row.value}</td>
+                    </th>
+                    <td className="py-2 text-[var(--color-text)] [overflow-wrap:anywhere]">{row.value}</td>
                   </tr>
                 ))}
               </tbody>
@@ -316,6 +376,30 @@ export function ProductInfo({ product }: ProductInfoProps) {
           {activeTab === 'shipping' && <ShippingTable />}
         </div>
       </div>
+
+      {canBuy && (
+        <div
+          inert={!showStickyBar}
+          className={cn(
+            'fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] transition-transform duration-200 md:hidden',
+            showStickyBar ? 'translate-y-0' : 'translate-y-full'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-[var(--color-text-muted)]">{product.name}</p>
+              <p className="text-lg font-bold tabular-nums text-[var(--color-text)]">{formatPrice(currentPrice)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="min-h-12 shrink-0 rounded-full bg-[var(--color-primary)] px-5 text-base font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
+            >
+              {needsVariant ? 'Elige un tamaño' : 'Agregar al carrito'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

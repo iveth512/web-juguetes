@@ -45,14 +45,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 function getBadge(product: ProductDetail) {
   if (product.is_on_sale && product.sale_percentage) {
     return {
-      label: `-${product.sale_percentage}%`,
-      className: 'bg-[var(--color-accent)] text-white',
+      label: `−${product.sale_percentage}%`,
+      className: 'bg-[var(--color-accent)] text-[var(--color-on-accent)]',
     };
   }
   if (product.is_new) {
     return {
-      label: 'NUEVO',
-      className: 'bg-[var(--color-accent)] text-white',
+      label: 'Nuevo',
+      className: 'bg-[var(--color-accent)] text-[var(--color-on-accent)]',
     };
   }
   return null;
@@ -131,27 +131,29 @@ export default async function ProductDetailPage({ params }: Props) {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] mb-6">
-          <Link href="/" className="hover:text-[var(--color-primary)] transition-colors">
+        <nav aria-label="Ruta de navegación" className="mb-6 flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-muted)]">
+          <Link href="/" className="shrink-0 transition-colors hover:text-[var(--color-primary-text)]">
             Inicio
           </Link>
-          <span>/</span>
+          <span aria-hidden="true">/</span>
           <Link
             href={`/productos?franchise=${product.franchise.slug}`}
-            className="hover:text-[var(--color-primary)] transition-colors"
+            className="shrink-0 transition-colors hover:text-[var(--color-primary-text)]"
           >
             {product.franchise.name}
           </Link>
-          <span>/</span>
-          <span className="text-[var(--color-text)] font-medium truncate max-w-[200px]">
+          <span aria-hidden="true">/</span>
+          <span className="min-w-0 truncate text-[var(--color-text)]" aria-current="page">
             {product.name}
           </span>
         </nav>
 
         {/* Two-column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-[55%_1fr] gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12">
           {/* Gallery */}
-          <ProductGallery images={product.images} productName={product.name} badge={badge} />
+          <div className="md:sticky md:top-[116px] md:self-start lg:top-[164px]">
+            <ProductGallery images={product.images} productName={product.name} badge={badge} />
+          </div>
 
           {/* Info */}
           <ProductInfo product={product} />
@@ -160,10 +162,10 @@ export default async function ProductDetailPage({ params }: Props) {
 
       {/* Related products */}
       {product.related_products.length > 0 && (
-        <section className="bg-[var(--color-bg-alt)] py-12 mt-12">
+        <section aria-labelledby="related-title" className="mt-12 bg-[var(--color-bg-alt)] py-16">
           <div className="max-w-7xl mx-auto px-4">
-            <h2 className="font-heading text-2xl font-bold text-[var(--color-text)] mb-6">
-              Tambien te puede interesar
+            <h2 id="related-title" className="type-section mb-8 text-[var(--color-text)]">
+              También te puede interesar
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {product.related_products.slice(0, 4).map((related) => (

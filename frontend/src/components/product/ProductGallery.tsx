@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
+import { Maximize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ProductImage } from '@/types/product';
 
@@ -46,7 +47,24 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
     []
   );
 
-  const handleMouseEnter = useCallback(() => setShowZoom(true), []);
+  // Only a real hovering pointer gets the lens; touch goes straight to the lightbox.
+  const handleMouseEnter = useCallback(() => {
+    if (window.matchMedia('(hover: hover) and (min-width: 768px)').matches) setShowZoom(true);
+  }, []);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [lightboxOpen]);
   const handleMouseLeave = useCallback(() => setShowZoom(false), []);
 
   return (
@@ -55,15 +73,12 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
         {/* Main image */}
         <div
           ref={mainRef}
-          className="relative aspect-square bg-[var(--color-bg-alt)] rounded-lg border border-[var(--color-border)] overflow-hidden cursor-crosshair"
+          className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-[var(--color-bg-alt)] md:cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onClick={() => {
-            // Mobile: open lightbox
-            if (window.matchMedia('(max-width: 768px)').matches) {
-              setLightboxOpen(true);
-            }
+            if (activeImage) setLightboxOpen(true);
           }}
         >
           {activeImage ? (
@@ -77,8 +92,8 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
               unoptimized
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm">
-              [Imagen no disponible]
+            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-base">
+              Imagen no disponible
             </div>
           )}
 
@@ -86,7 +101,7 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
           {badge && (
             <span
               className={cn(
-                'absolute top-3 left-3 px-3 py-1 rounded text-xs font-semibold z-10',
+                'absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-sm font-semibold',
                 badge.className
               )}
             >
@@ -109,16 +124,26 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
             />
           )}
 
-          {/* Zoom hint */}
-          <span className="hidden md:block absolute bottom-2 right-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-card)] bg-opacity-80 px-2 py-1 rounded z-10">
-            Hover para zoom
-          </span>
+          {activeImage && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxOpen(true);
+              }}
+              className="absolute bottom-3 right-3 z-10 flex min-h-11 items-center gap-2 rounded-full bg-[var(--color-bg-card)] px-4 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg)]"
+            >
+              <Maximize2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              Ver en grande
+            </button>
+          )}
         </div>
 
         {/* Zoom panel (desktop, absolutely positioned right of gallery) */}
         {showZoom && activeImage && (
           <div
-            className="hidden md:block absolute top-0 left-[calc(100%+16px)] w-[400px] h-[400px] border border-[var(--color-border)] rounded-lg overflow-hidden z-30 bg-white"
+            aria-hidden="true"
+            className="hidden md:block absolute top-0 left-[calc(100%+16px)] z-30 h-[400px] w-[400px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl"
             style={{
               backgroundImage: `url(${activeImage.image})`,
               backgroundSize: `${ZOOM_FACTOR * 100}%`,
@@ -130,13 +155,16 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
 
         {/* Thumbnails */}
         {sortedImages.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {sortedImages.map((img, index) => (
               <button
                 key={img.id}
+                type="button"
                 onClick={() => setActiveIndex(index)}
+                aria-label={`Ver imagen ${index + 1} de ${sortedImages.length}`}
+                aria-current={index === activeIndex ? 'true' : undefined}
                 className={cn(
-                  'shrink-0 w-[80px] h-[80px] rounded border-2 overflow-hidden bg-[var(--color-bg-alt)]',
+                  'h-[80px] w-[80px] shrink-0 overflow-hidden rounded-xl border-2 bg-[var(--color-bg-alt)]',
                   index === activeIndex
                     ? 'border-[var(--color-primary)]'
                     : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/50'
@@ -144,7 +172,7 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
               >
                 <Image
                   src={img.image}
-                  alt={img.alt_text || `${productName} - ${index + 1}`}
+                  alt=""
                   width={80}
                   height={80}
                   className="object-contain w-full h-full"
@@ -156,23 +184,27 @@ export function ProductGallery({ images, productName, badge }: ProductGalleryPro
         )}
       </div>
 
-      {/* Mobile lightbox */}
       {lightboxOpen && activeImage && (
         <div
-          className="fixed inset-0 z-50 bg-black flex items-center justify-center md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Imagen ampliada de ${productName}`}
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--color-stage)] p-4 md:p-10"
           onClick={() => setLightboxOpen(false)}
         >
           <button
-            className="absolute top-4 right-4 text-white text-3xl z-50 w-10 h-10 flex items-center justify-center"
+            type="button"
+            autoFocus
+            className="absolute right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-10 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-stage-raised)] text-[var(--color-stage-text)] transition-opacity hover:opacity-80"
             onClick={(e) => {
               e.stopPropagation();
               setLightboxOpen(false);
             }}
-            aria-label="Cerrar"
+            aria-label="Cerrar imagen ampliada"
           >
-            &times;
+            <X className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
           </button>
-          <div className="relative w-full h-full">
+          <div className="relative h-full w-full">
             <Image
               src={activeImage.image}
               alt={activeImage.alt_text || productName}

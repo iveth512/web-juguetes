@@ -1,7 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { formatPrice } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import type { ProductVariant } from '@/types/product';
 
 interface VariantSelectorProps {
@@ -18,27 +17,34 @@ export function VariantSelector({ variants, selectedVariantId, onSelect }: Varia
   if (activeVariants.length === 0) return null;
 
   return (
-    <div>
-      <label className="text-sm font-semibold text-[var(--color-text)] mb-2 block">
-        Tamano:
-      </label>
+    <fieldset>
+      <legend className="mb-2 text-base font-medium text-[var(--color-text)]">Tamaño</legend>
       <div className="flex flex-wrap gap-2">
-        {activeVariants.map((variant) => (
-          <button
-            key={variant.id}
-            onClick={() => onSelect(variant)}
-            className={cn(
-              'px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors',
-              selectedVariantId === variant.id
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                : 'border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-primary)]/50'
-            )}
-          >
-            <span>{variant.name}</span>
-            <span className="ml-2 text-xs opacity-75">{formatPrice(variant.price)}</span>
-          </button>
-        ))}
+        {activeVariants.map((variant) => {
+          const selected = selectedVariantId === variant.id;
+          const soldOut = variant.stock === 0;
+          return (
+            <button
+              key={variant.id}
+              type="button"
+              onClick={() => onSelect(variant)}
+              aria-pressed={selected}
+              className={cn(
+                'flex min-h-11 items-center gap-2 rounded-full border-2 px-4 text-base font-medium transition-colors',
+                selected
+                  ? 'border-[var(--color-primary)] bg-[var(--color-bg-alt)] text-[var(--color-text)]'
+                  : 'border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-text-muted)]',
+                soldOut && 'text-[var(--color-text-muted)] line-through'
+              )}
+            >
+              <span>{variant.name}</span>
+              <span className="text-sm text-[var(--color-text-muted)] tabular-nums">
+                {soldOut ? 'Agotado' : formatPrice(variant.price)}
+              </span>
+            </button>
+          );
+        })}
       </div>
-    </div>
+    </fieldset>
   );
 }
