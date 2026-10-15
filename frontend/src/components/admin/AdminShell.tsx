@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
@@ -10,19 +9,35 @@ import { cn } from '@/lib/utils';
 const NAV = [
   { href: '/panel/dashboard', label: 'Dashboard' },
   { href: '/panel/productos', label: 'Productos' },
-  { href: '/panel/productos/nuevo', label: 'Nuevo producto' },
 ];
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
-  const router = useRouter();
 
-  // The API enforces admin access too; this only keeps customers off the UI.
-  useEffect(() => {
-    if (user && !user.is_staff) router.replace('/');
-  }, [user, router]);
-
-  if (!user?.is_staff) return null;
+  if (!user) return null;
+  // The API enforces admin access too; this only tells customers where they are.
+  if (!user.is_staff) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-12 md:py-16">
+        <h1 className="type-page text-[var(--color-text)]">Sin acceso</h1>
+        <p className="mt-4 text-base text-[var(--color-text-muted)]">Esta sección es solo para administradores.</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-primary)] px-6 text-base font-semibold text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)]"
+          >
+            Ir al inicio
+          </Link>
+          <Link
+            href="/productos"
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-6 text-base font-semibold text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]"
+          >
+            Ver catálogo
+          </Link>
+        </div>
+      </div>
+    );
+  }
   return <>{children}</>;
 }
 
@@ -32,23 +47,20 @@ export function AdminShell({ title, actions, children }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isActive = (href: string) =>
-    href === '/panel/productos'
-      ? pathname === href || /^\/panel\/productos\/(?!nuevo)/.test(pathname)
-      : pathname === href;
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <ProtectedRoute>
       <AdminGuard>
         <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-          <nav aria-label="Administración" className="mb-6 flex flex-wrap gap-1 border-b border-[var(--color-border)]">
+          <nav aria-label="Administración" className="mb-6 flex gap-1 border-b border-[var(--color-border)]">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                aria-current={isActive(item.href) ? 'page' : undefined}
+                aria-current={pathname === item.href ? 'page' : isActive(item.href) ? 'true' : undefined}
                 className={cn(
-                  'whitespace-nowrap px-4 py-3 text-base font-semibold border-b-2 -mb-px transition-colors',
+                  'shrink-0 whitespace-nowrap px-4 py-3 text-base font-semibold border-b-2 -mb-px transition-colors',
                   isActive(item.href)
                     ? 'border-[var(--color-primary)] text-[var(--color-primary-text)]'
                     : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
@@ -74,3 +86,11 @@ export const adminInputClass =
 
 export const adminCardClass =
   'rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]';
+
+export const adminPillClass =
+  'inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors disabled:opacity-50';
+
+export const adminSecondaryButtonClass = cn(
+  adminPillClass,
+  'border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)]'
+);

@@ -1,0 +1,9 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Productos — Panel — Juguetes para Frikis',
+};
+
+export default function ProductosLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}

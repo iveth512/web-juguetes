@@ -53,7 +53,7 @@ export function ProductForm({ product, onSaved }: Props) {
   useEffect(() => {
     getAdminOptions()
       .then(setOptions)
-      .catch(() => setOptionsError('No se pudieron cargar categorias, franquicias y marcas.'));
+      .catch(() => setOptionsError('No se pudieron cargar categorías, franquicias y marcas.'));
   }, []);
 
   const set = <K extends keyof ReturnType<typeof initialState>>(key: K, value: ReturnType<typeof initialState>[K]) => {
@@ -271,7 +271,7 @@ export function ProductForm({ product, onSaved }: Props) {
         {fieldError('images') ?? (
           <p className="mt-1 text-xs text-[var(--color-text-muted)]">
             JPG, PNG o WEBP, máximo {MAX_IMAGE_MB} MB cada una.{' '}
-            {isEdit ? 'Las nuevas se agregan a las actuales.' : 'La primera sera la imagen principal.'}
+            {isEdit ? 'Las nuevas se agregan a las actuales.' : 'La primera será la imagen principal.'}
           </p>
         )}
       </div>
@@ -282,7 +282,7 @@ export function ProductForm({ product, onSaved }: Props) {
           disabled={submitting}
           className="w-full sm:w-auto min-h-11 px-7 py-2.5 rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] font-semibold text-base hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
         >
-          {submitting ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear producto'}
+          {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear producto'}
         </button>
       </div>
     </form>

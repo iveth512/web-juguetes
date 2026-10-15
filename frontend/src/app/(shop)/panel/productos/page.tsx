@@ -1,49 +1,91 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { AdminShell, adminCardClass, adminInputClass } from '@/components/admin/AdminShell';
-import { adminDeleteProduct, adminListProducts } from '@/lib/api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AdminShell, adminCardClass, adminInputClass, adminSecondaryButtonClass } from '@/components/admin/AdminShell';
+import { DeleteProductControl } from '@/components/admin/DeleteProductControl';
+import { adminListProducts } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import type { AdminProduct } from '@/types/admin';
 import type { PaginatedResponse } from '@/types/product';
 
 const PAGE_SIZE = 24;
 
-function StockBadge({ product }: { product: AdminProduct }) {
-  if (!product.is_active) {
-    return <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">Inactivo</span>;
-  }
-  if (product.stock === 0) {
-    return <span className="whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Agotado</span>;
-  }
-  if (product.stock <= product.low_stock_threshold) {
-    return <span className="whitespace-nowrap rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">Stock bajo</span>;
-  }
-  return <span className="whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">Activo</span>;
+function StatusBadge({ active }: { active: boolean }) {
+  return active
+    ? <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Activo</span>
+    : <span className="whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">Inactivo</span>;
+}
+
+function StockValue({ product }: { product: AdminProduct }) {
+  const hint = product.stock === 0
+    ? <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">agotado</span>
+    : product.stock <= product.low_stock_threshold
+      ? <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">bajo</span>
+      : null;
+  return (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap tabular-nums text-[var(--color-text)]">
+      {product.stock}
+      {hint}
+    </span>
+  );
+}
+
+function Thumb({ product, size }: { product: AdminProduct; size: string }) {
+  const image = product.images.find((i) => i.is_primary) ?? product.images[0];
+  return image ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={image.image} alt="" className={`${size} shrink-0 rounded object-cover bg-[var(--color-bg-alt)]`} />
+  ) : (
+    <div className={`${size} shrink-0 rounded bg-[var(--color-bg-alt)]`} aria-hidden />
+  );
+}
+
+function deletedNotice(name: string, deactivated: boolean) {
+  return deactivated
+    ? `"${name}" tiene pedidos, así que se desactivó en lugar de eliminarse.`
+    : `"${name}" fue eliminado.`;
 }
 
 function AdminProductList() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState(searchParams.get('estado') ?? '');
   const [orden, setOrden] = useState('recientes');
   const [page, setPage] = useState(1);
-  const [data, setData] = useState<PaginatedResponse<AdminProduct> | null>(null);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+  // Results remember the query they answer; the last list stays visible while the next one loads.
+  const [result, setResult] = useState<{ key: string; data?: PaginatedResponse<AdminProduct>; error?: string } | null>(null);
+  // A delete from the edit page lands here with its result in the URL.
+  const [notice, setNotice] = useState(() => {
+    const desactivado = searchParams.get('desactivado');
+    const eliminado = searchParams.get('eliminado');
+    if (desactivado) return deletedNotice(desactivado, true);
+    if (eliminado) return deletedNotice(eliminado, false);
+    return '';
+  });
 
-  const load = useCallback(() => {
-    setError('');
+  useEffect(() => {
+    if (searchParams.has('eliminado') || searchParams.has('desactivado')) {
+      router.replace('/panel/productos', { scroll: false });
+    }
+  }, [searchParams, router]);
+
+  const key = JSON.stringify([search, estado, orden, page, reload]);
+  useEffect(() => {
+    let cancelled = false;
     adminListProducts({ q: search, estado, orden, page })
-      .then(setData)
-      .catch(() => setError('No se pudieron cargar los productos.'));
-  }, [search, estado, orden, page]);
+      .then((data) => !cancelled && setResult({ key, data }))
+      .catch(() => !cancelled && setResult({ key, error: 'No se pudieron cargar los productos.' }));
+    return () => { cancelled = true; };
+  }, [key, search, estado, orden, page]);
 
-  useEffect(load, [load]);
+  const data = result?.data ?? null;
+  const error = result?.key === key ? result.error ?? '' : '';
+  const load = () => setReload((n) => n + 1);
 
   // Debounced search box
   useEffect(() => {
@@ -54,24 +96,28 @@ function AdminProductList() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const handleDelete = async (product: AdminProduct) => {
-    if (!window.confirm(`¿Eliminar "${product.name}"? Si tiene ventas, solo se desactivara.`)) return;
-    setBusyId(product.id);
-    setNotice('');
-    try {
-      const result = await adminDeleteProduct(product.id);
-      setNotice(result?.deactivated
-        ? `"${product.name}" tiene pedidos, asi que se desactivo en lugar de eliminarse.`
-        : `"${product.name}" fue eliminado.`);
-      load();
-    } catch (err: unknown) {
-      setNotice(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
-    } finally {
-      setBusyId(null);
-    }
-  };
+  const actions = (p: AdminProduct) => (
+    <>
+      <Link href={`/panel/productos/${p.id}`} className={adminSecondaryButtonClass}>Editar</Link>
+      <DeleteProductControl
+        productId={p.id}
+        onDeleted={(deactivated) => {
+          setNotice(deletedNotice(p.name, deactivated));
+          load();
+        }}
+        onError={setNotice}
+      />
+    </>
+  );
 
   const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_SIZE)) : 1;
+  const isEmpty = data?.results.length === 0;
+  const emptyMessage = (
+    <>
+      No hay productos que coincidan.{' '}
+      <Link href="/panel/productos/nuevo" className="font-semibold text-[var(--color-primary-text)] hover:underline">Crear uno</Link>
+    </>
+  );
 
   return (
     <>
@@ -107,15 +153,51 @@ function AdminProductList() {
       )}
       {error && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
 
-      <div className={`${adminCardClass} overflow-x-auto`}>
+      {/* Below md each product is a card; the table needs the width. */}
+      <ul className={`${adminCardClass} divide-y divide-[var(--color-border)] md:hidden`} aria-label="Productos">
+        {!data && !error && [1, 2, 3].map((i) => (
+          <li key={i} className="p-4"><div className="h-24 animate-pulse rounded bg-[var(--color-bg-alt)]" /></li>
+        ))}
+        {isEmpty && <li className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">{emptyMessage}</li>}
+        {data?.results.map((p) => (
+          <li key={p.id} className="p-4">
+            <div className="flex gap-3">
+              <Thumb product={p} size="h-14 w-14" />
+              <div className="min-w-0">
+                <p className="font-semibold text-[var(--color-text)]">{p.name}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {p.sku}{p.franchise_name ? `, ${p.franchise_name}` : ''}
+                </p>
+              </div>
+            </div>
+            <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <dt className="text-xs text-[var(--color-text-muted)]">Precio</dt>
+                <dd className="tabular-nums text-[var(--color-text)]">{formatPrice(p.base_price)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-text-muted)]">Stock</dt>
+                <dd><StockValue product={p} /></dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-text-muted)]">Estado</dt>
+                <dd><StatusBadge active={p.is_active} /></dd>
+              </div>
+            </dl>
+            <div className="mt-3 flex flex-wrap gap-2">{actions(p)}</div>
+          </li>
+        ))}
+      </ul>
+
+      <div className={`${adminCardClass} hidden overflow-x-auto md:block`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--color-border)] text-left text-sm font-medium text-[var(--color-text-muted)]">
               <th className="px-4 py-3 font-semibold">Producto</th>
-              <th className="hidden xl:table-cell px-4 py-3 font-semibold">Categoría</th>
+              <th className="hidden lg:table-cell px-4 py-3 font-semibold">Franquicia</th>
               <th className="px-4 py-3 font-semibold text-right">Precio</th>
-              <th className="px-4 py-3 font-semibold text-right">Stock</th>
-              <th className="px-4 py-3 font-semibold text-right">Vendidos</th>
+              <th className="px-4 py-3 font-semibold">Stock</th>
+              <th className="hidden lg:table-cell px-4 py-3 font-semibold text-right">Vendidos</th>
               <th className="px-4 py-3 font-semibold">Estado</th>
               <th className="px-4 py-3 font-semibold text-right">Acciones</th>
             </tr>
@@ -126,69 +208,43 @@ function AdminProductList() {
                 <td colSpan={7} className="px-4 py-3"><div className="h-8 animate-pulse rounded bg-[var(--color-bg-alt)]" /></td>
               </tr>
             ))}
-            {data?.results.length === 0 && (
+            {isEmpty && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-[var(--color-text-muted)]">
-                  No hay productos que coincidan.{' '}
-                  <Link href="/panel/productos/nuevo" className="font-semibold text-[var(--color-primary)] hover:underline">Crear uno</Link>
-                </td>
+                <td colSpan={7} className="px-4 py-12 text-center text-[var(--color-text-muted)]">{emptyMessage}</td>
               </tr>
             )}
-            {data?.results.map((p) => {
-              const image = p.images.find((i) => i.is_primary) ?? p.images[0];
-              return (
-                <tr key={p.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-alt)]">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3 min-w-[200px]">
-                      {image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={image.image} alt="" className="h-10 w-10 rounded object-cover bg-[var(--color-bg-alt)]" />
-                      ) : (
-                        <div className="h-10 w-10 rounded bg-[var(--color-bg-alt)]" aria-hidden />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-semibold text-[var(--color-text)] truncate max-w-[240px]" title={p.name}>{p.name}</p>
-                        <p className="text-xs text-[var(--color-text-muted)]">{p.sku}</p>
-                      </div>
+            {data?.results.map((p) => (
+              <tr key={p.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-alt)]">
+                <td className="px-4 py-3">
+                  <div className="flex min-w-[220px] items-center gap-3">
+                    <Thumb product={p} size="h-10 w-10" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[var(--color-text)]">{p.name}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">{p.sku}</p>
                     </div>
-                  </td>
-                  <td className="hidden xl:table-cell px-4 py-3 text-[var(--color-text-muted)] whitespace-nowrap">{p.category_name}</td>
-                  <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap text-[var(--color-text)]">{formatPrice(p.base_price)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-[var(--color-text)]">{p.stock}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-[var(--color-text)]">{p.units_sold ?? 0}</td>
-                  <td className="px-4 py-3"><StockBadge product={p} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/panel/productos/${p.id}`}
-                        className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-bg)]"
-                      >
-                        Editar
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p)}
-                        disabled={busyId === p.id}
-                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-                      >
-                        {busyId === p.id ? '...' : 'Eliminar'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                  </div>
+                </td>
+                <td className="hidden lg:table-cell px-4 py-3 text-[var(--color-text-muted)]">{p.franchise_name || '—'}</td>
+                <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap text-[var(--color-text)]">{formatPrice(p.base_price)}</td>
+                <td className="px-4 py-3"><StockValue product={p} /></td>
+                <td className="hidden lg:table-cell px-4 py-3 text-right tabular-nums text-[var(--color-text)]">{p.units_sold ?? 0}</td>
+                <td className="px-4 py-3"><StatusBadge active={p.is_active} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap justify-end gap-2">{actions(p)}</div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       {data && data.count > PAGE_SIZE && (
-        <div className="mt-4 flex items-center justify-between text-sm text-[var(--color-text-muted)]">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--color-text-muted)]">
           <span>{data.count} productos</span>
           <div className="flex items-center gap-2">
-            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 disabled:opacity-40">Anterior</button>
+            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className={`${adminSecondaryButtonClass} disabled:opacity-40`}>Anterior</button>
             <span>Página {page} de {totalPages}</span>
-            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 disabled:opacity-40">Siguiente</button>
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className={`${adminSecondaryButtonClass} disabled:opacity-40`}>Siguiente</button>
           </div>
         </div>
       )}
@@ -203,9 +259,9 @@ export default function AdminProductsPage() {
       actions={
         <Link
           href="/panel/productos/nuevo"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-base font-semibold text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)]"
+          className="inline-flex min-h-11 items-center justify-center self-start rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-base font-semibold text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)] sm:self-auto"
         >
-          + Nuevo producto
+          Nuevo producto
         </Link>
       }
     >
