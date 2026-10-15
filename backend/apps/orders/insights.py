@@ -1,6 +1,7 @@
 """Business analysis for the admin panel (staff only).
 
-Uses the dashboard's definition of a sale and its date range. Unit cost is the
+Uses the dashboard's definition of a sale, its date range and its net sales
+(subtotal - discount) for order-level amounts. Unit cost is the
 product's landed cost (total_cost_cop plus local shipping); products without a
 cost report costo=null and stay out of the margin totals. Costs are the current
 ones, not a snapshot at the time of sale.
@@ -56,6 +57,7 @@ class InsightsView(_RangeView):
 
         for order in orders:
             local = timezone.localtime(order.sold_at)
+            net = order.subtotal - order.discount
             units = 0
             for item in order.items.all():
                 products[item.product_id] = item.product
@@ -65,21 +67,21 @@ class InsightsView(_RangeView):
                 units += item.quantity
             for bucket in (weekday[local.weekday()], hourly[local.hour]):
                 bucket["pedidos"] += 1
-                bucket["ingresos"] += order.total
+                bucket["ingresos"] += net
             group = coupons["con" if order.coupon_id else "sin"]
             group["pedidos"] += 1
-            group["ingresos"] += order.total
+            group["ingresos"] += net
             group["unidades"] += units
             customer = by_customer[order.user_id]
             customer["pedidos"] += 1
-            customer["ingresos"] += order.total
+            customer["ingresos"] += net
             city_name = " ".join(order.shipping_city.split()) or "Sin ciudad"
             city = by_city.setdefault(
                 city_name.casefold(), {"spellings": Counter(), "pedidos": 0, "ingresos": Decimal("0")},
             )
             city["spellings"][city_name] += 1
             city["pedidos"] += 1
-            city["ingresos"] += order.total
+            city["ingresos"] += net
 
         margins, profit_total, revenue_with_cost = [], Decimal("0"), Decimal("0")
         for pid, line in sold.items():

@@ -1,6 +1,8 @@
 """Sales dashboard API (admins only).
 
 A "sale" is an order that was paid: status paid, shipped or delivered.
+Sales amounts are net product sales (subtotal - discount); shipping and
+discounts are reported apart, and total_cobrado is what customers paid.
 Sales are dated by when they were paid (falling back to creation for
 orders paid before paid_at existed), in the store's time zone.
 """
@@ -19,6 +21,7 @@ from apps.products.models import Product
 from core.pagination import StandardPagination
 
 from .models import Order, OrderItem
+from .services import to_pesos
 
 SALE_STATUSES = [Order.Status.PAID, Order.Status.SHIPPED, Order.Status.DELIVERED]
 DEFAULT_RANGE_DAYS = 30
@@ -64,6 +67,9 @@ def sales_queryset(start, end):
     )
 
 
+NET_SALES = ExpressionWrapper(F("subtotal") - F("discount"), output_field=DecimalField(max_digits=14, decimal_places=2))
+
+
 def _money(value):
     return f"{(value or Decimal('0')):.2f}"
 
@@ -86,10 +92,13 @@ class DashboardSummaryView(_RangeView):
     def build(self, request, start, end):
         sales = sales_queryset(start, end)
         totals = sales.aggregate(
-            revenue=Sum("total"),
+            revenue=Sum(NET_SALES),
             orders=Count("id"),
-            average=Avg("total"),
+            average=Avg(NET_SALES),
             customers=Count("user", distinct=True),
+            shipping=Sum("shipping_cost"),
+            discounts=Sum("discount"),
+            charged=Sum("total"),
         )
         units = OrderItem.objects.filter(order__in=sales.values("pk")).aggregate(u=Sum("quantity"))["u"]
         return {
@@ -97,7 +106,10 @@ class DashboardSummaryView(_RangeView):
             "hasta": end.isoformat(),
             "ventas_total": _money(totals["revenue"]),
             "pedidos": totals["orders"],
-            "ticket_promedio": _money(totals["average"]),
+            "ticket_promedio": _money(to_pesos(totals["average"])) if totals["average"] is not None else _money(None),
+            "envios_cobrados": _money(totals["shipping"]),
+            "descuentos": _money(totals["discounts"]),
+            "total_cobrado": _money(totals["charged"]),
             "unidades_vendidas": units or 0,
             "clientes": totals["customers"],
             # Current state, independent of the range:
@@ -116,7 +128,7 @@ class SalesByDayView(_RangeView):
             sales_queryset(start, end)
             .annotate(dia=TruncDate("sold_at", tzinfo=timezone.get_current_timezone()))
             .values("dia")
-            .annotate(total=Sum("total"), pedidos=Count("id"))
+            .annotate(total=Sum(NET_SALES), pedidos=Count("id"))
         )
         by_day = {row["dia"]: row for row in rows}
         days = []

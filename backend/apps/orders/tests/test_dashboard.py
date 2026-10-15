@@ -81,6 +81,24 @@ class TestSummary:
         assert resp.data["pedidos_pendientes_pago"] == 1
         assert resp.data["pedidos_por_despachar"] == 2  # the PAID ones (incl. out of range)
 
+    def test_sales_are_net_of_shipping_and_discounts(self, admin_client, buyer):
+        product = _create_product()
+        today = timezone.localdate()
+        order = _sale(buyer, product, today, qty=2, price="50000")  # subtotal 100.000
+        Order.objects.filter(pk=order.pk).update(
+            discount=Decimal("10000"), shipping_cost=Decimal("8900"), total=Decimal("98900"),
+        )
+
+        summary = admin_client.get("/api/v1/admin/dashboard/summary/").data
+        assert summary["ventas_total"] == "90000.00"
+        assert summary["ticket_promedio"] == "90000.00"
+        assert summary["descuentos"] == "10000.00"
+        assert summary["envios_cobrados"] == "8900.00"
+        assert summary["total_cobrado"] == "98900.00"
+
+        day = admin_client.get(f"/api/v1/admin/dashboard/sales-by-day/?desde={today}&hasta={today}").data
+        assert day["dias"][0]["total"] == "90000.00"
+
     def test_empty_range_returns_zeros(self, admin_client):
         resp = admin_client.get("/api/v1/admin/dashboard/summary/")
         assert resp.data["pedidos"] == 0
