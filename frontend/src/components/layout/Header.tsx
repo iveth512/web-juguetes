@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { SearchBar } from "./SearchBar";
 import { MobileNav } from "./MobileNav";
+import { AdminTopBar } from "./AdminTopBar";
 
 const NAV_LINKS = [
   { href: "/", label: "Inicio" },
@@ -67,13 +68,26 @@ export function Header() {
     userDropdownTimeout.current = setTimeout(() => setUserDropdownOpen(false), 200);
   };
 
+  const isStaff = Boolean(user?.is_staff);
+
+  if (pathname.startsWith("/panel")) return <AdminTopBar />;
+
   return (
     <>
       <header className="sticky top-0 z-50">
         {/* Announcement bar - hidden on mobile to save space, sticky header stays visible */}
-        <p className="hidden sm:block bg-[var(--color-accent)] text-[var(--color-on-accent)] text-sm text-center py-1.5 px-4 font-medium">
-          Envío gratis en compras desde $250.000. Todos nuestros Funko Pop! son originales.
-        </p>
+        {isStaff ? (
+          <p className="bg-[var(--color-secondary)] text-white text-sm text-center py-2 px-4 font-medium">
+            Estás viendo la tienda como administrador: las compras están desactivadas.{" "}
+            <Link href="/panel/dashboard" className="font-semibold underline underline-offset-4">
+              Ir al panel
+            </Link>
+          </p>
+        ) : (
+          <p className="hidden sm:block bg-[var(--color-accent)] text-[var(--color-on-accent)] text-sm text-center py-1.5 px-4 font-medium">
+            Envío gratis en compras desde $250.000. Todos nuestros Funko Pop! son originales.
+          </p>
+        )}
 
         {/* Main header */}
         <div className="grain bg-[var(--color-stage)]">
@@ -189,7 +203,9 @@ export function Header() {
                 </Link>
               )}
 
-              {/* Favoritos */}
+              {!isStaff && (
+                <>
+                {/* Favoritos */}
               <Link
                 href={isAuthenticated ? "/favoritos" : "/login"}
                 className="relative flex items-center gap-1.5 text-white/75 hover:text-white transition-colors min-h-11 min-w-11 justify-center px-2.5 rounded-full hover:bg-white/10 text-sm"
@@ -221,6 +237,8 @@ export function Header() {
                   </span>
                 )}
               </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

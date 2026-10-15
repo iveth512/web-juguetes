@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Truck } from 'lucide-react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { StaffNotice } from '@/components/auth/StaffNotice';
+import { useIsStaff } from '@/hooks/useIsStaff';
 import { PaymentReassurance } from '@/components/cart/CartSummary';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
@@ -406,7 +408,12 @@ function CheckoutForm() {
 export default function CheckoutPage() {
   return (
     <ProtectedRoute>
-      <CheckoutForm />
+      <CheckoutGate />
     </ProtectedRoute>
   );
+}
+
+function CheckoutGate() {
+  const isStaff = useIsStaff();
+  return isStaff ? <StaffNotice /> : <CheckoutForm />;
 }

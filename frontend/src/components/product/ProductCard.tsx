@@ -9,6 +9,7 @@ import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useWishlist, useToggleWishlist } from '@/hooks/useWishlist';
+import { useIsStaff } from '@/hooks/useIsStaff';
 import { StarRating } from './StarRating';
 import type { ProductListItem } from '@/types/product';
 
@@ -42,6 +43,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const inWishlist = isInWishlist(product.id);
   const badge = getBadge(product);
   const isOutOfStock = product.stock === 0;
+  const isStaff = useIsStaff();
   const isLowStock = !isOutOfStock && product.stock <= product.low_stock_threshold;
   const href = `/productos/${product.slug}`;
 
@@ -95,7 +97,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
-        {!isOutOfStock && (
+        {!isOutOfStock && !isStaff && (
           <button
             type="button"
             onClick={handleAddToCart}
@@ -144,6 +146,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
       </div>
 
+      {!isStaff && (
       <button
         type="button"
         onClick={handleWishlistToggle}
@@ -156,6 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
           strokeWidth={1.75}
         />
       </button>
+      )}
 
     </article>
   );

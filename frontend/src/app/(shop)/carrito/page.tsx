@@ -7,6 +7,8 @@ import { useCart } from '@/hooks/useCart';
 import { CartItem } from '@/components/cart/CartItem';
 import { CartSummary } from '@/components/cart/CartSummary';
 import { CartRecommendations } from '@/components/cart/CartRecommendations';
+import { StaffNotice } from '@/components/auth/StaffNotice';
+import { useIsStaff } from '@/hooks/useIsStaff';
 
 function ClearCartControl({ onConfirm }: { onConfirm: () => void }) {
   const [confirming, setConfirming] = useState(false);
@@ -47,6 +49,9 @@ function ClearCartControl({ onConfirm }: { onConfirm: () => void }) {
 
 export default function CarritoPage() {
   const { items, totalItems, hasHydrated, clearCart } = useCart();
+  const isStaff = useIsStaff();
+
+  if (isStaff) return <StaffNotice />;
 
   // Don't render cart content until hydrated to avoid mismatch
   if (!hasHydrated) {

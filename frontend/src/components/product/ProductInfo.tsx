@@ -9,6 +9,7 @@ import { cn, formatPrice, getStockStatus } from '@/lib/utils';
 import { getShippingZones } from '@/lib/api';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useIsStaff } from '@/hooks/useIsStaff';
 import { useToggleWishlist, useWishlist } from '@/hooks/useWishlist';
 import { FREE_SHIPPING_THRESHOLD } from '@/components/cart/CartSummary';
 import { VariantSelector } from './VariantSelector';
@@ -101,6 +102,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
   const addItem = useCartStore((s) => s.addItem);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isStaff = useIsStaff();
   const { isInWishlist } = useWishlist();
   const { add, remove, isPending: wishlistPending } = useToggleWishlist();
   const inWishlist = isInWishlist(product.id);
@@ -245,7 +247,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
       </p>
 
       <div ref={actionsRef} className="space-y-3">
-        {canBuy && (
+        {canBuy && !isStaff && (
           <div className="flex items-center gap-3">
             <label htmlFor="product-quantity" className="text-base font-medium text-[var(--color-text)]">
               Cantidad
@@ -286,6 +288,18 @@ export function ProductInfo({ product }: ProductInfoProps) {
           </div>
         )}
 
+        {isStaff ? (
+          <div className="rounded-2xl bg-[var(--color-bg-alt)] p-4 text-base">
+            <p className="font-semibold text-[var(--color-text)]">Vista de administrador</p>
+            <p className="mt-1 text-[var(--color-text-muted)]">Las compras están desactivadas para tu cuenta.</p>
+            <Link
+              href={`/panel/productos/${product.id}`}
+              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[var(--color-primary)] px-5 font-semibold text-[var(--color-on-primary)] transition-colors hover:bg-[var(--color-primary-hover)]"
+            >
+              Editar en el panel
+            </Link>
+          </div>
+        ) : (
         <div className="flex gap-3">
           <button
             type="button"
@@ -311,6 +325,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
             />
           </button>
         </div>
+        )}
       </div>
 
       <ul className="grid gap-2 text-sm text-[var(--color-text)] sm:grid-cols-3 sm:gap-4 md:grid-cols-1 md:gap-2 xl:grid-cols-3 xl:gap-4">
@@ -377,7 +392,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </div>
       </div>
 
-      {canBuy && (
+      {canBuy && !isStaff && (
         <div
           inert={!showStickyBar}
           className={cn(

@@ -4,11 +4,17 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { googleSignInEnabled } from '@/lib/google';
 
 const inputClassName =
   'min-h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 text-base text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]';
+
+/** Admins land in their panel unless they were heading somewhere specific. */
+function destinationFor(redirectTo: string, isStaff: boolean | undefined) {
+  return isStaff && redirectTo === '/' ? '/panel/dashboard' : redirectTo;
+}
 
 export function LoginContent() {
   const { login, loginWithGoogle, isAuthenticated } = useAuth();
@@ -21,6 +27,7 @@ export function LoginContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const isStaffUser = useAuthStore((s) => Boolean(s.user?.is_staff));
   const next = searchParams.get('next');
   // Only same-site paths: an absolute URL here would be an open redirect.
   const redirectTo = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
@@ -28,9 +35,9 @@ export function LoginContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace(redirectTo);
+      router.replace(destinationFor(redirectTo, isStaffUser));
     }
-  }, [isAuthenticated, router, redirectTo]);
+  }, [isAuthenticated, isStaffUser, router, redirectTo]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -38,7 +45,7 @@ export function LoginContent() {
     setLoading(true);
     try {
       await login({ email, password, remember });
-      router.push(redirectTo);
+      router.push(destinationFor(redirectTo, useAuthStore.getState().user?.is_staff));
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'No pudimos iniciar sesión. Revisa tu correo y contraseña e intenta de nuevo.';
@@ -53,7 +60,7 @@ export function LoginContent() {
     setLoading(true);
     try {
       await loginWithGoogle(accessToken);
-      router.push(redirectTo);
+      router.push(destinationFor(redirectTo, useAuthStore.getState().user?.is_staff));
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'No pudimos iniciar sesión con Google. Intenta de nuevo.';

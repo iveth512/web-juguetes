@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 
 const STORE_LINKS = [
@@ -28,6 +31,9 @@ const COLUMNS = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/panel")) return null;
+
   return (
     <footer className="grain mt-auto bg-[var(--color-stage)] text-[var(--color-stage-text)]">
       <div className="mx-auto max-w-7xl px-4 pb-10 pt-16 md:pt-24">
