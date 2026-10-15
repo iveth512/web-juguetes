@@ -310,20 +310,10 @@ body {
   .misreg {
     text-shadow: 0.05em 0.035em 0 var(--misreg-ink, color-mix(in srgb, var(--color-primary) 75%, transparent));
   }
-  /* Soft riso tooth over photographs. */
+  /* Photos stay clean: grain lives on colour fields only. Kept as a hook for clipping and stacking. */
   .riso-photo {
     position: relative;
     isolation: isolate;
-  }
-  .riso-photo::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: url("/textures/riso-dark.png"), url("/textures/riso-light.png");
-    background-size: 200px 200px, 200px 200px;
-    opacity: 0.55;
-    z-index: 1;
   }
   /* Printed-paper frame with an off-register colour block behind it (a solid offset, like a second ink pass). */
   .photo-frame {
