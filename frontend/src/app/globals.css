@@ -274,7 +274,8 @@ body {
 @layer components {
   .type-hero,
   .type-page,
-  .type-section {
+  .type-section,
+  .type-sub {
     font-family: var(--font-display), Impact, sans-serif;
     font-weight: 400;
     font-synthesis: none;
@@ -371,6 +372,11 @@ body {
     --color-bg-alt: var(--color-stage-raised);
     --color-primary-text: #FFB27A;
     color: var(--color-stage-text);
+  }
+  /* Card and panel headings (checkout, order summary, footer columns). */
+  .type-sub {
+    font-size: 1.75rem;
+    line-height: 1;
   }
   .type-lead {
     font-size: clamp(1.0625rem, 1.4vw, 1.25rem);

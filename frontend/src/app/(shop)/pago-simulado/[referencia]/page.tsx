@@ -67,10 +67,10 @@ function SimulatedGateway() {
 
       <div className="overflow-hidden rounded-2xl bg-[var(--color-bg-alt)]">
         <div className="bg-[var(--color-stage)] px-6 py-5 text-[var(--color-stage-text)]">
-          <p className="text-sm text-[var(--color-stage-muted)]">Pago a Juguetes para Frikis</p>
+          <h1 className="type-sub text-[var(--color-stage-text)]">Pago a Juguetes para Frikis</h1>
           <p className="mt-3 text-sm text-[var(--color-stage-muted)]">{charge.description}</p>
-          <p className="mt-1 text-3xl font-bold tabular-nums">
-            {formatPrice(charge.amount)} <span className="text-base font-semibold text-[var(--color-stage-muted)]">{charge.currency}</span>
+          <p className="mt-2 font-[family-name:var(--font-display)] text-5xl leading-none tabular-nums">
+            {formatPrice(charge.amount)} <span className="font-[family-name:var(--font-body)] text-base font-semibold text-[var(--color-stage-muted)]">{charge.currency}</span>
           </p>
         </div>
 
@@ -104,14 +104,14 @@ function SimulatedGateway() {
               </div>
               <div className="flex items-baseline justify-between gap-4 pt-2">
                 <dt className="font-bold text-[var(--color-text)]">Total</dt>
-                <dd className="text-xl font-bold tabular-nums text-[var(--color-text)]">{formatPrice(order.total)}</dd>
+                <dd className="text-2xl font-bold tabular-nums text-[var(--color-text)]">{formatPrice(order.total)}</dd>
               </div>
             </dl>
           )}
 
           <div className="rounded-xl bg-[var(--color-bg-card)] p-4 text-sm text-[var(--color-text-muted)]">
             <p className="font-semibold text-[var(--color-text)]">Tarjeta de prueba</p>
-            <p className="mt-1 font-mono">4111 1111 1111 1111 · 12/30 · 123</p>
+            <p className="mt-1 text-base font-semibold tracking-wide tabular-nums text-[var(--color-text)]">4111 1111 1111 1111 · 12/30 · 123</p>
             <p className="mt-1 text-sm">Elige el resultado que quieres simular.</p>
           </div>
 

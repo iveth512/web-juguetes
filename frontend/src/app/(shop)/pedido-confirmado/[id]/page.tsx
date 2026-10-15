@@ -219,7 +219,7 @@ function OrderConfirmation() {
 
       {/* Order details card */}
       <div className="mb-6 rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
-        <h2 className="mb-4 text-xl font-bold text-[var(--color-text)]">
+        <h2 className="type-sub mb-4 text-[var(--color-text)]">
           Detalle del pedido
         </h2>
 
@@ -275,7 +275,7 @@ function OrderConfirmation() {
 
       {/* Shipping info */}
       <div className="mb-10 rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
-        <h2 className="mb-3 text-xl font-bold text-[var(--color-text)]">
+        <h2 className="type-sub mb-3 text-[var(--color-text)]">
           Dirección de envío
         </h2>
         <p className="text-base text-[var(--color-text)]">{order.shipping_name}</p>

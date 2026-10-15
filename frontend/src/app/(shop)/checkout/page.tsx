@@ -242,7 +242,7 @@ function CheckoutForm() {
       <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px] lg:gap-12">
         <div className="space-y-6">
           <section aria-labelledby="shipping-title" className="rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
-            <h2 id="shipping-title" className="mb-1 text-xl font-bold text-[var(--color-text)]">
+            <h2 id="shipping-title" className="type-sub mb-2 text-[var(--color-text)]">
               Datos de envío
             </h2>
             <p className="mb-5 text-sm text-[var(--color-text-muted)]">Todos los campos son obligatorios.</p>
@@ -299,7 +299,7 @@ function CheckoutForm() {
 
         <div>
           <div className="sticky top-[116px] lg:top-[164px] space-y-5 rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
-            <h2 className="text-xl font-bold text-[var(--color-text)]">Resumen del pedido</h2>
+            <h2 className="type-sub text-[var(--color-text)]">Resumen del pedido</h2>
 
             <ul className="space-y-3">
               {items.map((item) => (

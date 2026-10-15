@@ -113,7 +113,7 @@ export function CartSummary() {
 
   return (
     <div className="sticky top-[116px] lg:top-[164px] space-y-5 rounded-2xl bg-[var(--color-bg-alt)] p-5 sm:p-6">
-      <h2 className="text-xl font-bold text-[var(--color-text)]">Resumen del pedido</h2>
+      <h2 className="type-sub text-[var(--color-text)]">Resumen del pedido</h2>
 
       <FreeShippingProgress subtotal={subtotal} />
 

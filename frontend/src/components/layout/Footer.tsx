@@ -73,7 +73,7 @@ export function Footer() {
     { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
   ];
   const headingClass =
-    "font-[family-name:var(--font-display)] text-2xl uppercase leading-none text-[var(--color-stage-text)]";
+    "type-sub text-[var(--color-stage-text)]";
 
   return (
     <footer className="mt-auto">

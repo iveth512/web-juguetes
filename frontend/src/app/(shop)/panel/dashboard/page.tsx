@@ -233,7 +233,7 @@ function SalesHistory({ range }: { range: DateRange }) {
             )}
             {data?.results.map((o) => (
               <tr key={o.id} className="border-b border-[var(--color-border)] last:border-0 align-top">
-                <td className="px-3 py-2.5 font-mono text-xs text-[var(--color-text)] whitespace-nowrap">
+                <td className="px-3 py-2.5 text-sm font-semibold tabular-nums text-[var(--color-text)] whitespace-nowrap">
                   #{o.id.slice(0, 8).toUpperCase()}
                   {o.requires_attention && <span className="ml-1 rounded bg-yellow-100 px-1 text-[10px] font-sans font-semibold text-yellow-800" title="Requiere revisión">!</span>}
                 </td>
