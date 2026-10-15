@@ -78,7 +78,7 @@ export function CartDrawer() {
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] md:bottom-auto md:top-[112px] lg:top-[160px] md:justify-end md:px-6"
+      className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] md:bottom-auto md:top-[112px] lg:top-[160px] md:justify-end md:px-6"
     >
       {visible && (
         <div

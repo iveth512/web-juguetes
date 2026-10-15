@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Lock, Truck, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
@@ -72,7 +73,7 @@ export function PaymentReassurance() {
 export function CartSummary() {
   const { subtotal, isFreeShipping } = useCart();
   const couponCode = useCartStore((s) => s.couponCode);
-  const couponDiscount = useCartStore((s) => s.couponDiscount);
+  const storedDiscount = useCartStore((s) => s.couponDiscount);
   const applyCoupon = useCartStore((s) => s.applyCoupon);
   const removeCoupon = useCartStore((s) => s.removeCoupon);
 
@@ -82,6 +83,21 @@ export function CartSummary() {
   const [inputCode, setInputCode] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+
+  // The discount depends on the subtotal (percentages, minimums), so it is re-quoted whenever the cart changes.
+  const requote = useQuery({
+    queryKey: ['coupon', couponCode, subtotal],
+    queryFn: () => validateCoupon(couponCode, subtotal),
+    enabled: Boolean(couponCode) && subtotal > 0,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const couponStillApplies = !requote.isError;
+  const couponDiscount = !couponCode || !couponStillApplies
+    ? 0
+    : requote.data
+      ? parseFloat(requote.data.discount_amount)
+      : storedDiscount;
 
   // Shipping depends on the destination city; it is priced at checkout.
   const total = subtotal - couponDiscount;
@@ -137,6 +153,14 @@ export function CartSummary() {
               </button>
             </dt>
             <dd className="font-semibold tabular-nums text-[var(--color-text)]">−{formatPrice(couponDiscount)}</dd>
+          </div>
+        )}
+        {couponCode && !couponStillApplies && (
+          <div className="text-sm text-[var(--color-error)]" role="alert">
+            El cupón {couponCode} ya no aplica a este carrito. {couponErrorMessage(requote.error)}{' '}
+            <button type="button" onClick={handleRemoveCoupon} className="font-semibold underline underline-offset-4">
+              Quitar cupón
+            </button>
           </div>
         )}
 

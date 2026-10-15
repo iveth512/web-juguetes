@@ -115,7 +115,16 @@ async function request(endpoint: string, options: RequestInit = {}, isRetry = fa
     headers,
   });
 
-  // A stale token (e.g. rotated at login) gets one retry with a fresh one.
+  // A session cookie whose user no longer exists (e.g. after the demo database is reset) makes the
+  // API reject even public reads; repeat them as a guest instead of showing an empty store.
+  if (res.status === 401 && !UNSAFE_METHODS.has(method) && !isRetry) {
+    const body = await res.clone().text();
+    if (body.includes("user_not_found") || body.includes("token_not_valid")) {
+      return fetch(`${getBaseUrl()}${endpoint}`, { ...options, credentials: "omit", headers });
+    }
+  }
+
+  // A stale CSRF token (e.g. rotated at login) gets one retry with a fresh one.
   if (res.status === 403 && UNSAFE_METHODS.has(method) && !isRetry) {
     const body = await res.clone().text();
     if (body.includes("CSRF")) return request(endpoint, options, true);
