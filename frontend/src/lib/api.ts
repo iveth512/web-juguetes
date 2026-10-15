@@ -115,12 +115,17 @@ async function request(endpoint: string, options: RequestInit = {}, isRetry = fa
     headers,
   });
 
-  // A session cookie whose user no longer exists (e.g. after the demo database is reset) makes the
-  // API reject even public reads; repeat them as a guest instead of showing an empty store.
-  if (res.status === 401 && !UNSAFE_METHODS.has(method) && !isRetry) {
+  // The API rejects every request, even public reads and a login, while the browser holds a bad
+  // session cookie: an expired access token (30 min) is renewed once; a session whose user no
+  // longer exists (e.g. after the demo database is reset) is dropped, and the request retried.
+  if (res.status === 401 && !isRetry && typeof window !== "undefined") {
     const body = await res.clone().text();
     if (body.includes("user_not_found") || body.includes("token_not_valid")) {
-      return fetch(`${getBaseUrl()}${endpoint}`, { ...options, credentials: "omit", headers });
+      const renewed =
+        body.includes("token_not_valid") &&
+        (await request("/auth/token/refresh/", { method: "POST" }, true)).ok;
+      if (!renewed) await fetch("/session-reset", { method: "POST", credentials: "include" });
+      return request(endpoint, options, true);
     }
   }
 
