@@ -78,7 +78,8 @@ services:
       context: ./frontend
       # NEXT_PUBLIC_* are inlined into the browser bundle at build time, so they are build args.
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+        # Set NEXT_PUBLIC_API_URL=/api/v1 to route the browser through the same-origin proxy (one public URL).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
         NEXT_PUBLIC_PAYMENT_PROVIDER: simulado
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     ports:

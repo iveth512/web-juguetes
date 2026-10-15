@@ -38,6 +38,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // Django URLs end in "/"; the same-origin API proxy must forward them untouched.
+  skipTrailingSlashRedirect: true,
   async headers() {
     if (process.env.NODE_ENV !== "production") return [];
     return [{ source: "/:path*", headers: securityHeaders }];
