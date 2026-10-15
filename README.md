@@ -37,15 +37,18 @@ Para detenerlo: `Ctrl + C` o `docker compose down`. Para borrar también la base
 
 También puedes registrar clientes nuevos desde la tienda.
 
-Al arrancar se cargan automáticamente 75 Funko Pop! con fotos propias de cada pieza (`backend/seed/images/`), 11 ofertas de la semana, zonas de envío, cupones (`BIENVENIDO10`, `ENVIOGRATIS`, `FRIKI20`) y unas 45 ventas de los últimos 30 días para que el dashboard tenga datos.
+Al arrancar se cargan automáticamente 75 Funko Pop! con fotos propias de cada pieza (`backend/seed/images/`), 11 ofertas de la semana, zonas de envío, cupones (`BIENVENIDO10`, `ENVIOGRATIS`, `FRIKI20`) y unas 72 ventas de 56 clientes en los últimos 90 días, para que el dashboard y el análisis tengan datos.
 
 ## Recorrido sugerido
 
 1. **Cliente:** entra con `cliente@demo.local`, agrega productos al carrito, aplica el cupón `BIENVENIDO10` y ve a "Checkout". Escribe una ciudad (Bogotá, Medellín, Cali u otra) para ver el costo de envío.
 2. **Pago simulado:** "Ir a pagar" abre la **pasarela simulada**. Elige "Aprobar pago" o "Rechazar pago". Un pago rechazado deja el pedido pendiente para reintentar o cancelar.
-3. **Administrador:** entra con `admin@demo.local` y abre "Panel de administración":
-   - **Dashboard:** ventas por día, ventas por producto e historial de ventas, con filtros de periodo.
-   - **Productos:** crear, buscar, editar (precio, stock, imágenes) y eliminar.
+3. **Administrador:** entra con `admin@demo.local`; el inicio de sesión lleva directo al panel, que tiene su propia barra de navegación:
+   - **Dashboard:** ventas netas (sin envío y con descuentos aplicados), ventas por día, ventas por producto e historial de ventas con filtros de periodo. Desde el historial se marca un pedido como enviado (con transportadora y guía) y luego como entregado.
+   - **Análisis:** hallazgos calculados sobre el periodo elegido, cada uno con su gráfica, una recomendación y vista de tabla: inventario sin ventas, productos en riesgo de agotarse, margen y utilidad por producto, pedidos cerca del envío gratis, efecto de los cupones, concentración de ingresos, franquicias, días y horas de compra y ciudades.
+   - **Productos:** crear, buscar, filtrar por estado y franquicia, editar (precio, stock, imágenes) y eliminar.
+
+   Las cuentas de administrador pueden recorrer la tienda como vista previa, pero no comprar: no ven carrito ni favoritos y el backend rechaza sus pedidos.
 
 ## Pagos
 
@@ -81,5 +84,6 @@ docker-compose.yml      PostgreSQL 16, Redis, backend, worker y frontend
 
 - Si editas código del frontend, reinicia el contenedor (`docker compose restart frontend`): en Windows y macOS el modo de desarrollo no siempre detecta cambios en carpetas compartidas.
 - Las fotos y los videos de la tienda son de nuestras propias piezas; los videos de la portada están en `frontend/public/media/`.
+- Estilo visual: Anton para titulares, Bricolage Grotesque para texto y Damion en las pegatinas; texturas de papel y riso en `frontend/public/textures/`, con modo claro y oscuro.
 - Los correos (confirmación de compra, recuperación de contraseña) se imprimen en la consola del backend en lugar de enviarse.
 - El login con Google aparece solo si configuras tu propio Client ID (`backend/.env.example`).
